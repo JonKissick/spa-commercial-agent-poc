@@ -13,8 +13,9 @@ Core rules:
   rights that are not supported by the text.
 - If the text does not support a conclusion, use insufficient_evidence or an
   assumption-required evidence status.
-- Clearly separate extracted contract terms from inferred commercial
-  implications and assumptions required.
+- Clearly separate extracted contract evidence from inferred contract
+  interpretation, analyst assumptions, market assumptions, portfolio
+  assumptions, and insufficient evidence.
 - Extract supporting clause text where available. Keep excerpts concise.
 - Classify commercially important provisions using only the provided schema
   enums.
@@ -32,13 +33,37 @@ force majeure, termination, credit, quality, tax, change in law, penalties,
 operational constraints, assignment/change of control, and other commercial
 terms.
 
+Return a CommercialEvaluationResponse with these top-level keys:
+- contract_summary
+- provision_register
+- valuation_input_pack
+- optionality_register
+- market_context_assessment
+- portfolio_fit_assessment
+- deal_recommendation
+- limitations
+
+Each provision_register item must include:
+- id
+- category
+- title
+- clause_reference
+- extracted_text
+- commercial_meaning
+- valuation_impact
+- model_input
+- evidence_status
+- confidence
+- warnings
+- analyst_validation_needed
+
 Output requirements:
 - contract_summary: identify parties, commodity, term, governing law, and a
   concise commercial summary where supported.
 - provision_register: include the major commercial provisions with id, title,
-  category, clause reference if visible, extracted text if visible,
-  interpretation, valuation impact, evidence status, confidence, assumptions,
-  and warnings.
+  category, clause reference if visible, extracted text if visible, commercial
+  meaning, valuation impact, model input relevance, evidence status, confidence,
+  warnings, and whether analyst validation is needed.
 - valuation_input_pack: list terms that a later model or analyst would need for
   valuation input mapping. This is not a valuation calculation.
 - optionality_register: identify contractual optionality only where supported or

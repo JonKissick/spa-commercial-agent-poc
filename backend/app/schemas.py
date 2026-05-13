@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ProvisionCategory(StrEnum):
@@ -74,16 +74,28 @@ class ContractSummary(BaseModel):
 
 class ProvisionRegisterItem(BaseModel):
     id: str
-    title: str = "Untitled provision"
     category: ProvisionCategory
+    title: str
     clause_reference: str | None = None
     extracted_text: str | None = None
-    interpretation: str
+    commercial_meaning: str
     valuation_impact: ValuationImpact
+    model_input: str | None = None
     evidence_status: EvidenceStatus
     confidence: Confidence
-    assumption_required: str | None = None
     warnings: list[str] = Field(default_factory=list)
+    analyst_validation_needed: bool = True
+    # Compatibility fields consumed by the current frontend shell.
+    interpretation: str | None = None
+    assumption_required: str | None = None
+
+    @model_validator(mode="after")
+    def populate_compatibility_fields(self) -> "ProvisionRegisterItem":
+        if self.interpretation is None:
+            self.interpretation = self.commercial_meaning
+        if self.assumption_required is None and self.analyst_validation_needed:
+            self.assumption_required = self.model_input
+        return self
 
 
 class ValuationInputPack(BaseModel):
@@ -133,7 +145,21 @@ class CommercialEvaluationResponse(BaseModel):
     provision_register: list[ProvisionRegisterItem]
     valuation_input_pack: ValuationInputPack
     optionality_register: list[OptionalityRegisterItem]
-    market_context: MarketContextAssessment
-    portfolio_fit: PortfolioFitAssessment
-    recommendation: DealRecommendation
+    market_context_assessment: MarketContextAssessment
+    portfolio_fit_assessment: PortfolioFitAssessment
+    deal_recommendation: DealRecommendation
     limitations: list[str] = Field(default_factory=list)
+    # Compatibility fields consumed by the current frontend shell.
+    market_context: MarketContextAssessment | None = None
+    portfolio_fit: PortfolioFitAssessment | None = None
+    recommendation: DealRecommendation | None = None
+
+    @model_validator(mode="after")
+    def populate_compatibility_fields(self) -> "CommercialEvaluationResponse":
+        if self.market_context is None:
+            self.market_context = self.market_context_assessment
+        if self.portfolio_fit is None:
+            self.portfolio_fit = self.portfolio_fit_assessment
+        if self.recommendation is None:
+            self.recommendation = self.deal_recommendation
+        return self
