@@ -39,6 +39,12 @@ class Confidence(StrEnum):
     LOW = "low"
 
 
+class CoverageStatus(StrEnum):
+    PRESENT = "present"
+    WEAK_UNCLEAR = "weak_unclear"
+    NOT_IDENTIFIED = "not_identified"
+
+
 class EvidenceStatus(StrEnum):
     EXTRACTED_FROM_CONTRACT = "extracted_from_contract"
     INFERRED_FROM_CONTRACT = "inferred_from_contract"
@@ -98,6 +104,15 @@ class ProvisionRegisterItem(BaseModel):
         return self
 
 
+class ClauseCoverageItem(BaseModel):
+    category: ProvisionCategory
+    label: str
+    status: CoverageStatus
+    evidence_summary: str | None = None
+    provision_ids: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ValuationInputPack(BaseModel):
     pricing_inputs: list[str] = Field(default_factory=list)
     volume_inputs: list[str] = Field(default_factory=list)
@@ -142,6 +157,7 @@ class DealRecommendation(BaseModel):
 
 class CommercialEvaluationResponse(BaseModel):
     contract_summary: ContractSummary
+    clause_coverage: list[ClauseCoverageItem]
     provision_register: list[ProvisionRegisterItem]
     valuation_input_pack: ValuationInputPack
     optionality_register: list[OptionalityRegisterItem]

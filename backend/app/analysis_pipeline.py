@@ -1,8 +1,10 @@
 from app.ai_client import AIClient, MissingAPIKeyError
 from app.config import get_settings
 from app.schemas import (
+    ClauseCoverageItem,
     CommercialEvaluationResponse,
     Confidence,
+    CoverageStatus,
     ContractSummary,
     DealRecommendation,
     EvidenceNote,
@@ -16,6 +18,7 @@ from app.schemas import (
     ValuationImpact,
     ValuationInputPack,
 )
+from app.taxonomy import SPA_TAXONOMY, taxonomy_categories
 from app.validation import validate_commercial_evaluation
 
 MIN_USEFUL_CONTRACT_CHARS = 40
@@ -59,8 +62,10 @@ def _normalize_contract_text(contract_text: str) -> str:
 def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     excerpt = contract_text[:280].strip() if contract_text.strip() else None
 
+    clause_coverage = _build_mock_clause_coverage()
+
     market_context = MarketContextAssessment(
-        summary="Market context is not evaluated in Stage 1 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
+        summary="Market context is not evaluated in Stage 2 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
         required_market_assumptions=[
             "Relevant commodity forward curve.",
             "Regional basis differentials.",
@@ -70,7 +75,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
         confidence=Confidence.LOW,
     )
     portfolio_fit = PortfolioFitAssessment(
-        summary="Portfolio fit is not evaluated in Stage 1 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
+        summary="Portfolio fit is not evaluated in Stage 2 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
         required_portfolio_assumptions=[
             "Current portfolio exposure by tenor and location.",
             "Operational capacity and delivery constraints.",
@@ -81,7 +86,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     )
     recommendation = DealRecommendation(
         recommendation=RecommendationValue.INSUFFICIENT_EVIDENCE,
-        memo="Stage 1 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
+        memo="Stage 2 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
         key_conditions=[
             "Complete validated clause extraction.",
             "Confirm valuation model inputs.",
@@ -115,6 +120,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
                 ),
             ],
         ),
+        clause_coverage=clause_coverage,
         provision_register=[
             ProvisionRegisterItem(
                 id="PR-001",
@@ -127,7 +133,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
                 model_input="Confirm price formula, index linkage, escalation mechanics, and any review dates.",
                 evidence_status=EvidenceStatus.INFERRED_FROM_CONTRACT,
                 confidence=Confidence.LOW,
-                warnings=[],
+                warnings=["Low confidence mock extraction; validate pricing clause references before commercial reliance."],
                 analyst_validation_needed=True,
             ),
             ProvisionRegisterItem(
@@ -141,7 +147,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
                 model_input="Identify minimum, maximum, make-up, carry-forward, and nomination rights.",
                 evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
                 confidence=Confidence.LOW,
-                warnings=[],
+                warnings=["Volume flexibility evidence is weak or indirect in mock fallback mode."],
                 analyst_validation_needed=True,
             ),
             ProvisionRegisterItem(
@@ -200,7 +206,59 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
         portfolio_fit_assessment=portfolio_fit,
         deal_recommendation=recommendation,
         limitations=[
-            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 1 analysis.",
+            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 2 analysis.",
             "Market and portfolio conclusions require manual assumptions unless those assumptions are explicitly supplied in the uploaded document.",
         ],
     )
+
+
+def _build_mock_clause_coverage() -> list[ClauseCoverageItem]:
+    coverage: list[ClauseCoverageItem] = []
+    for category in taxonomy_categories():
+        taxonomy_item = SPA_TAXONOMY[category]
+        label = str(taxonomy_item["label"])
+        if category == ProvisionCategory.PRICING:
+            coverage.append(
+                ClauseCoverageItem(
+                    category=category,
+                    label=label,
+                    status=CoverageStatus.PRESENT,
+                    evidence_summary="Pricing language is present in the extracted text sample and is mapped to PR-001.",
+                    provision_ids=["PR-001"],
+                    warnings=[],
+                )
+            )
+        elif category == ProvisionCategory.VOLUME_FLEXIBILITY:
+            coverage.append(
+                ClauseCoverageItem(
+                    category=category,
+                    label=label,
+                    status=CoverageStatus.WEAK_UNCLEAR,
+                    evidence_summary="Volume flexibility is included as a weak illustrative extraction in mock fallback mode; analyst confirmation is required.",
+                    provision_ids=["PR-002"],
+                    warnings=["Evidence is partial or indirect in mock fallback mode."],
+                )
+            )
+        elif category == ProvisionCategory.CREDIT:
+            coverage.append(
+                ClauseCoverageItem(
+                    category=category,
+                    label=label,
+                    status=CoverageStatus.WEAK_UNCLEAR,
+                    evidence_summary="Credit support is flagged for review, but the mock fallback does not establish a definitive credit support clause.",
+                    provision_ids=["PR-003"],
+                    warnings=["Insufficient evidence means credit support must be validated against the contract."],
+                )
+            )
+        else:
+            coverage.append(
+                ClauseCoverageItem(
+                    category=category,
+                    label=label,
+                    status=CoverageStatus.NOT_IDENTIFIED,
+                    evidence_summary="No supporting clause was identified in the extracted contract text.",
+                    provision_ids=[],
+                    warnings=[],
+                )
+            )
+    return coverage

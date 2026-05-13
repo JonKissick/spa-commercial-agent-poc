@@ -2,7 +2,7 @@
 
 FastAPI backend for the SPA Commercial Evaluation Agent POC.
 
-Stage 1 extracts embedded PDF text with `pypdf`, optionally sends that text to OpenAI for structured commercial analysis, validates the result with Pydantic, and returns a `CommercialEvaluationResponse`.
+Stage 2 extracts embedded PDF text with `pypdf`, optionally sends that text to OpenAI for structured commercial analysis, validates the result with Pydantic, and returns a `CommercialEvaluationResponse` with a taxonomy-driven provision register and clause coverage map.
 
 If `OPENAI_API_KEY` is not set, the backend keeps working with the local mock fallback.
 
@@ -33,7 +33,7 @@ ALLOWED_ORIGINS=http://localhost:3000
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://localhost:8000`.
+The API will be available at `http://localhost:8000` unless that port is already in use.
 
 ## Endpoints
 
@@ -46,16 +46,67 @@ The API will be available at `http://localhost:8000`.
 curl -X POST http://localhost:8000/analyze   -F "file=@/path/to/spa-contract.pdf"
 ```
 
+## Stage 2 Taxonomy
+
+The backend includes a deterministic SPA commercial taxonomy in `app/taxonomy.py`. It covers:
+
+- pricing
+- volume
+- take_or_pay
+- delivery
+- destination_flexibility
+- volume_flexibility
+- make_up
+- price_review
+- force_majeure
+- termination
+- credit
+- quality
+- tax
+- change_in_law
+- penalties
+- operational_constraints
+- assignment_change_of_control
+- other
+
+Each taxonomy item includes a label, description, what to look for, common clause signals, commercial importance, and typical valuation impact candidates.
+
+## Clause Coverage Map
+
+Responses include top-level `clause_coverage`. Each item maps one taxonomy category to a coverage status:
+
+- `present`: directly supported by extracted contract text.
+- `weak_unclear`: partial, ambiguous, indirect, or low-confidence support.
+- `not_identified`: no supporting extracted text was identified.
+
+The validator requires every taxonomy category exactly once. Present and weak/unclear items must include evidence summary or linked provision IDs. Not-identified items must state that supporting evidence was not identified.
+
+## Evidence Statuses
+
+Provision outputs use evidence statuses to separate contract evidence from assumptions:
+
+- `extracted_from_contract`
+- `inferred_from_contract`
+- `analyst_assumption_required`
+- `market_assumption_required`
+- `portfolio_assumption_required`
+- `insufficient_evidence`
+
+Low-confidence provisions and insufficient-evidence provisions must include warnings.
+
 ## Tests
 
 ```bash
-pytest
+pytest -q
 ```
 
-## Stage 1 Limitations
+No test requires a real OpenAI API call.
+
+## Stage 2 Limitations
 
 - Text extraction only supports embedded PDF text. Scanned PDFs require OCR in a later stage.
 - The OpenAI analysis is a first-pass extraction and commercial interpretation workflow, not legal advice.
 - No final valuation, DCF model, quantitative option valuation, or portfolio optimization is performed.
 - Market and portfolio conclusions require manual assumptions unless those assumptions are supplied in the uploaded document.
+- Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
 - No database, auth, deployment, Docker, report export, or multi-agent orchestration is included.
