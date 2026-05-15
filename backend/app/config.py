@@ -1,15 +1,29 @@
 from functools import lru_cache
 
 from dotenv import load_dotenv
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 load_dotenv()
 
 
+LOCAL_DEV_CORS_ORIGINS = ",".join(
+    [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
+    ]
+)
+
+
 class Settings(BaseSettings):
     app_name: str = "SPA Commercial Evaluation Agent"
-    allowed_origins: str = "http://localhost:3000"
+    allowed_origins: str = LOCAL_DEV_CORS_ORIGINS
+    cors_origins_override: str | None = Field(default=None, validation_alias="CORS_ORIGINS")
     llm_provider: str = "mock"
     openai_api_key: str | None = None
     openai_model: str = "gpt-4.1"
@@ -46,7 +60,8 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
+        raw_origins = self.cors_origins_override or self.allowed_origins
+        return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
 
 @lru_cache

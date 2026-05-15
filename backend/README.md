@@ -29,7 +29,7 @@ RAG_ENABLED=false
 RAG_TOP_K=5
 RAG_ANALYSIS_SECTIONS=pricing,valuation_input_pack,optionality,risk,recommendation
 RAG_ALLOWED_KNOWLEDGE_TYPES=internal_procedure,valuation_methodology,market_fundamentals,portfolio_strategy,good_analysis_example,corrected_analysis_example,reviewer_feedback,taxonomy_guidance,model_input_mapping_rule,negotiation_playbook,glossary,risk_policy
-ALLOWED_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002
 ```
 
 `LLM_PROVIDER` may be `mock`, `openai`, or `bedrock`. The default is `mock`. If `LLM_PROVIDER=openai` but `OPENAI_API_KEY` is missing, the backend falls back to mock mode. `OPENAI_MODEL` should be a structured-output capable OpenAI model. `AWS_REGION` and `BEDROCK_MODEL_ID` are used when `LLM_PROVIDER=bedrock`.

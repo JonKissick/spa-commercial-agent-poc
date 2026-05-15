@@ -89,3 +89,34 @@ def test_system_status_endpoint_exposes_only_non_secret_status(monkeypatch) -> N
     assert "bucket" not in serialized
     assert "local_document_dir" not in serialized
     assert "prompt" not in serialized
+
+
+def test_cors_preflight_allows_localhost_3001() -> None:
+    client = TestClient(app)
+
+    response = client.options(
+        "/health",
+        headers={
+            "Origin": "http://localhost:3001",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:3001"
+    assert "GET" in response.headers["access-control-allow-methods"]
+
+
+def test_cors_preflight_allows_loopback_3001() -> None:
+    client = TestClient(app)
+
+    response = client.options(
+        "/system/status",
+        headers={
+            "Origin": "http://127.0.0.1:3001",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:3001"
