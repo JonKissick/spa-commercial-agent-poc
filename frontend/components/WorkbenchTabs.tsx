@@ -1,10 +1,11 @@
-export type WorkbenchTab = "analyze" | "library" | "ingest" | "retrieval" | "status";
+export type WorkbenchTab = "analyze" | "library" | "ingest" | "retrieval" | "npv" | "status";
 
 const TABS: { id: WorkbenchTab; label: string }[] = [
   { id: "analyze", label: "Analyze Contract" },
   { id: "library", label: "RAG Library" },
   { id: "ingest", label: "RAG Ingest" },
   { id: "retrieval", label: "RAG Retrieval Test" },
+  { id: "npv", label: "NPV Calculator" },
   { id: "status", label: "System Status" },
 ];
 

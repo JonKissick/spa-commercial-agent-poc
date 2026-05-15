@@ -106,3 +106,6 @@ td p { margin: 6px 0 0; font-size: 0.86rem; }
 .compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .commercial-model-grid .json-block { max-height: 220px; }
 @media (max-width: 980px) { .commercial-model-grid, .compact-grid { grid-template-columns: 1fr; } }
+
+.npv-table table { min-width: 1600px; }
+.npv-table input { min-width: 110px; padding: 7px; }

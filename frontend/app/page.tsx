@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import AnalyzeContractPanel from "@/components/AnalyzeContractPanel";
+import NpvCalculatorPanel from "@/components/NpvCalculatorPanel";
 import RagIngestPanel from "@/components/RagIngestPanel";
 import RagLibraryPanel from "@/components/RagLibraryPanel";
 import RagRetrievalPanel from "@/components/RagRetrievalPanel";
@@ -104,6 +105,8 @@ export default function Home() {
       {activeTab === "ingest" && <RagIngestPanel onIngested={refreshKnowledge} />}
 
       {activeTab === "retrieval" && <RagRetrievalPanel />}
+
+      {activeTab === "npv" && <NpvCalculatorPanel />}
 
       {activeTab === "status" && (
         <SystemStatusPanel health={health} status={systemStatus} knowledge={knowledge} error={systemError} onRefresh={refreshSystem} />

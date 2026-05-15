@@ -3,6 +3,8 @@ import type {
   HealthResponse,
   IngestRagTextPayload,
   IngestionResult,
+  NpvCalculationRequest,
+  NpvCalculationResponse,
   KnowledgeDocumentMetadata,
   RetrievalResult,
   RetrieveRagPayload,
@@ -49,4 +51,8 @@ export async function retrieveRag(payload: RetrieveRagPayload): Promise<Retrieva
 
 export async function getSystemStatus(): Promise<SystemStatus> {
   return requestJson<SystemStatus>("/system/status");
+}
+
+export async function calculateNpv(payload: NpvCalculationRequest): Promise<NpvCalculationResponse> {
+  return requestJson<NpvCalculationResponse>("/calculators/npv", { method: "POST", body: JSON.stringify(payload) });
 }

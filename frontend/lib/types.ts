@@ -369,3 +369,62 @@ export interface AnalysisModelOutputs {
   portfolio_impact_requirements: PortfolioImpactRequirements;
   commercial_model_warnings: string[];
 }
+
+export type NpvScenarioName = "base" | "upside" | "downside" | "stress";
+export type NpvContractRole = "buyer" | "seller";
+export type NpvDeliveryBasis = "des" | "fob" | "ex_ship" | "delivered" | "free_on_board" | "unclear";
+
+export interface ScenarioAssumptions {
+  scenario_name: NpvScenarioName;
+  annual_volume: number;
+  contract_price: number;
+  market_price: number;
+  supply_cost?: number | null;
+  freight_cost?: number | null;
+  boil_off_cost?: number | null;
+  port_canal_cost?: number | null;
+  regas_terminal_cost?: number | null;
+  downstream_cost?: number | null;
+  other_costs?: number | null;
+  annual_fixed_costs?: number | null;
+  notes?: string | null;
+}
+
+export interface NpvCalculationRequest {
+  contract_role: NpvContractRole;
+  delivery_basis: NpvDeliveryBasis;
+  discount_rate: number;
+  contract_years: number;
+  currency: string;
+  unit: string;
+  scenarios: ScenarioAssumptions[];
+  include_midyear_discounting: boolean;
+}
+
+export interface ScenarioNpvResult {
+  scenario_name: NpvScenarioName;
+  annual_unit_margin: number;
+  annual_cash_flow: number;
+  npv: number;
+  undiscounted_total_cash_flow: number;
+  formula_used: string;
+  included_costs: string[];
+  excluded_costs: string[];
+  warnings: string[];
+  break_even_candidates: Record<string, number | null>;
+}
+
+export interface NpvCalculationResponse {
+  calculation_status: "calculated" | "partial" | "invalid";
+  contract_role: NpvContractRole;
+  delivery_basis: NpvDeliveryBasis;
+  currency: string;
+  unit: string;
+  discount_rate: number;
+  contract_years: number;
+  scenario_results: ScenarioNpvResult[];
+  key_sensitivities: string[];
+  break_even_candidates: string[];
+  warnings: string[];
+  limitations: string[];
+}

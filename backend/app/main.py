@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.calculators.npv import calculate_npv
+from app.calculators.schemas import NpvCalculationRequest, NpvCalculationResponse
 from app.analysis_pipeline import AnalysisPipelineError, ContractTextValidationError, run_analysis_pipeline
 from app.config import get_settings
 from app.document_store.base import DocumentStoreError, StoredDocument
@@ -102,6 +104,12 @@ def _to_document_metadata(stored_document: StoredDocument) -> DocumentMetadata:
         retention_policy=stored_document.retention_policy,
         storage_uri=storage_uri,
     )
+
+
+@app.post("/calculators/npv", response_model=NpvCalculationResponse)
+def calculator_npv(request: NpvCalculationRequest) -> NpvCalculationResponse:
+    # Deterministic manual-assumption calculator. Does not call LLMs, RAG, or market data services.
+    return calculate_npv(request)
 
 
 @app.post("/rag/ingest-text", response_model=IngestionResult)

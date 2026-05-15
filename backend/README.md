@@ -263,6 +263,24 @@ Suggested valuation methods are only method labels, such as `scenario_analysis`,
 Stage 4 does not calculate option value or any other quantitative result. It only identifies optionality and the method/data that a later analyst workflow might need.
 
 
+
+## Stage 7B Manual Scenario NPV Calculator
+
+The backend exposes `POST /calculators/npv`, a deterministic calculator for manually entered scenario assumptions. It does not call LLMs, RAG, live market data, document storage, or external services.
+
+Supported roles are `buyer` and `seller`. Supported delivery bases are `des`, `fob`, `ex_ship`, `delivered`, `free_on_board`, and `unclear`. Scenario names are `base`, `upside`, `downside`, and `stress`.
+
+The calculator applies simple annual margin formulas:
+
+- Buyer FOB/free-on-board: market price minus contract price minus freight, boil-off, port/canal, regas/terminal, downstream, and other costs.
+- Buyer DES/ex-ship/delivered: market price minus contract price minus regas/terminal, downstream, and other costs.
+- Seller FOB/free-on-board: contract price minus supply cost, port/canal cost, and other costs.
+- Seller DES/ex-ship/delivered: contract price minus supply, freight, boil-off, port/canal, regas/terminal, downstream, and other costs.
+
+Annual cash flow equals annual unit margin times annual volume minus annual fixed costs. NPV discounts that flat annual cash flow over the entered contract years, with optional midyear discounting. Missing optional costs default to zero and are warning-marked.
+
+Limitations: all numbers are manual assumptions; no live market data is used; no optionality value is included; outputs are preliminary and require analyst validation.
+
 ## Stage 7A Commercial Model Framework
 
 The backend now adds deterministic `analysis_model_outputs` after extraction, taxonomy coverage, valuation input mapping, and optionality routing. This framework does not call an LLM and does not calculate value. It determines the future commercial model route and the missing inputs required before a later manual scenario NPV calculator can be used.
