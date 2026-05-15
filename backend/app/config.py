@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     aws_region: str | None = None
     bedrock_model_id: str | None = None
     max_contract_chars: int = 120000
+    document_store_provider: str = "local"
+    local_document_dir: str = ".local_documents"
+    s3_bucket_name: str | None = None
+    s3_prefix: str = "spa-commercial-agent-poc/"
+    kms_key_id: str | None = None
+    document_retention_policy: str = "local_dev_delete_manually"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

@@ -285,6 +285,19 @@ class DealRecommendation(BaseModel):
     evidence_status: EvidenceStatus
 
 
+class DocumentMetadata(BaseModel):
+    document_id: str
+    original_filename: str
+    content_type: str
+    size_bytes: int
+    checksum_sha256: str
+    storage_provider: str
+    created_at: str
+    encryption_status: str
+    retention_policy: str
+    storage_uri: str | None = None
+
+
 class CommercialEvaluationResponse(BaseModel):
     contract_summary: ContractSummary
     clause_coverage: list[ClauseCoverageItem]
@@ -295,6 +308,7 @@ class CommercialEvaluationResponse(BaseModel):
     portfolio_fit_assessment: PortfolioFitAssessment
     deal_recommendation: DealRecommendation
     limitations: list[str] = Field(default_factory=list)
+    document_metadata: DocumentMetadata | None = None
     # Compatibility fields consumed by the current frontend shell.
     market_context: MarketContextAssessment | None = None
     portfolio_fit: PortfolioFitAssessment | None = None

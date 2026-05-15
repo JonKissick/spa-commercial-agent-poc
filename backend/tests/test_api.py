@@ -30,3 +30,36 @@ def test_analyze_returns_clear_error_when_pdf_has_no_extractable_text(monkeypatc
     assert response.json()["detail"] == (
         "No extractable text found. This POC currently supports text-based PDFs only; scanned PDFs will require OCR in a later stage."
     )
+
+
+def test_analyze_in_mock_mode_includes_document_metadata(monkeypatch, tmp_path) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+    monkeypatch.setenv("DOCUMENT_STORE_PROVIDER", "local")
+    monkeypatch.setenv("LOCAL_DOCUMENT_DIR", str(tmp_path))
+    get_settings.cache_clear()
+
+    client = TestClient(app)
+    monkeypatch.setattr(
+        "app.main.extract_text_from_pdf",
+        lambda _: "Sample SPA text with pricing, delivery, volume, credit, and commercial terms. " * 3,
+    )
+
+    response = client.post(
+        "/analyze",
+        files={"file": ("../Sensitive SPA #1.pdf", b"%PDF-1.4 text pdf", "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["contract_summary"]
+    assert payload["clause_coverage"]
+    metadata = payload["document_metadata"]
+    assert metadata["document_id"]
+    assert metadata["original_filename"] == "Sensitive_SPA_1.pdf"
+    assert metadata["content_type"] == "application/pdf"
+    assert metadata["size_bytes"] == len(b"%PDF-1.4 text pdf")
+    assert metadata["storage_provider"] == "local"
+    assert metadata["storage_uri"] is None
+    assert "Sample SPA text" not in str(metadata)

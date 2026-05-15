@@ -60,6 +60,36 @@ The analysis pipeline depends on `app/llm_providers/factory.py`, not directly on
 
 Tests do not make real OpenAI or Bedrock calls. Bedrock support is an API-layer refactor only; no AWS deployment, S3 storage, RAG, IAM design, or production security wrapper is included yet.
 
+
+## Stage 5B Document Handling
+
+The backend now stores uploaded PDFs through a document store abstraction before analysis. This prepares the project for secure commercial document handling without adding AWS deployment, RAG, auth, a database, OCR, or report export.
+
+Document store providers live under `app/document_store/`:
+
+- `local`: default development store. Files are saved under `backend/.local_documents/`, which is ignored by git.
+- `s3`: scaffold for later secure AWS use. It uses `boto3` S3 client, supports KMS server-side encryption when `KMS_KEY_ID` is configured, and stores only non-sensitive object metadata.
+
+Configuration:
+
+```bash
+DOCUMENT_STORE_PROVIDER=local
+LOCAL_DOCUMENT_DIR=.local_documents
+S3_BUCKET_NAME=
+S3_PREFIX=spa-commercial-agent-poc/
+KMS_KEY_ID=
+DOCUMENT_RETENTION_POLICY=local_dev_delete_manually
+```
+
+`/analyze` returns non-sensitive `document_metadata` with document id, sanitized filename, content type, size, checksum, storage provider, created timestamp, encryption status, and retention policy. Local filesystem paths and extracted contract text are not exposed in the API response metadata.
+
+Safety notes:
+
+- Raw PDF bytes are not logged.
+- Extracted contract text is not logged or stored in document metadata.
+- API keys, prompts, storage paths, and stack traces are not exposed in error responses.
+- Local storage is for development only; S3/KMS is scaffolded for a later secure AWS stage.
+
 ## Stage 2 Taxonomy
 
 The backend includes a deterministic SPA commercial taxonomy in `app/taxonomy.py`. It covers:
@@ -164,4 +194,5 @@ No test requires a real OpenAI API call.
 - No final valuation, DCF model, NPV, IRR, option value, fair value, expected profit, margin, trade P&L, quantitative option valuation, or portfolio optimization is performed.
 - Market and portfolio conclusions require manual assumptions unless those assumptions are supplied in the uploaded document.
 - Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
+- Local document storage is for development only and must be replaced with a production retention, encryption, and access-control design before real sensitive use.
 - No database, auth, deployment, Docker, report export, or multi-agent orchestration is included.
