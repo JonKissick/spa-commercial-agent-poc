@@ -197,6 +197,7 @@ export interface CommercialEvaluationResponse {
   limitations?: string[];
   document_metadata?: DocumentMetadata | null;
   rag_context_summary?: RagContextSummary | null;
+  analysis_model_outputs?: AnalysisModelOutputs | null;
   [key: string]: unknown;
 }
 
@@ -270,4 +271,101 @@ export interface SystemStatus {
   rag_enabled: boolean;
   local_dev_mode: boolean;
   note: string;
+}
+
+export interface DealStructureAssessment {
+  contract_role: string;
+  delivery_basis: string;
+  commodity?: string | null;
+  origin?: string | null;
+  destination?: string | null;
+  loading_port?: string | null;
+  discharge_port?: string | null;
+  title_transfer_point?: string | null;
+  risk_transfer_point?: string | null;
+  shipping_responsibility: string;
+  logistics_cost_responsibility: string;
+  source_provision_ids: string[];
+  evidence_status: string;
+  confidence: string;
+  warnings: string[];
+}
+
+export interface NpvReadinessAssessment {
+  readiness: string;
+  required_contract_inputs: string[];
+  available_contract_inputs: string[];
+  missing_contract_inputs: string[];
+  required_manual_assumptions: string[];
+  required_market_data: string[];
+  required_logistics_data: string[];
+  required_portfolio_data: string[];
+  can_calculate_npv_now: boolean;
+  reason_not_ready: string;
+  source_sections: string[];
+  warnings: string[];
+}
+
+export interface LandedValueOrNetbackAssessment {
+  applicable_model: string;
+  economic_logic: string;
+  value_formula_description: string;
+  required_price_inputs: string[];
+  required_volume_inputs: string[];
+  required_logistics_inputs: string[];
+  required_cost_inputs: string[];
+  required_tax_or_fee_inputs: string[];
+  origin_destination_relevance: string;
+  des_fob_notes: string[];
+  warnings: string[];
+}
+
+export interface ScenarioModelRequirements {
+  base_case_inputs_required: string[];
+  upside_case_inputs_required: string[];
+  downside_case_inputs_required: string[];
+  stress_case_inputs_required: string[];
+  key_sensitivities: string[];
+  break_even_candidates: string[];
+  manual_inputs_required_before_calculation: string[];
+  warnings: string[];
+}
+
+export interface RoutedOption {
+  option_type: string;
+  source_optionality_ids: string[];
+  suggested_model: string;
+  readiness: string;
+  missing_inputs: string[];
+  warnings: string[];
+}
+
+export interface OptionalityModelRoutingAssessment {
+  routed_options: RoutedOption[];
+  recommended_future_models: string[];
+  required_market_data: string[];
+  required_operational_data: string[];
+  required_portfolio_data: string[];
+  not_ready_reasons: string[];
+  warnings: string[];
+}
+
+export interface PortfolioImpactRequirements {
+  portfolio_relevance: string;
+  required_portfolio_inputs: string[];
+  potential_diversification_effects: string[];
+  potential_concentration_risks: string[];
+  potential_hedge_value: string[];
+  liquidity_or_operational_constraints: string[];
+  warnings: string[];
+}
+
+export interface AnalysisModelOutputs {
+  deal_structure: DealStructureAssessment;
+  npv_readiness: NpvReadinessAssessment;
+  landed_value_or_netback: LandedValueOrNetbackAssessment;
+  scenario_model_requirements: ScenarioModelRequirements;
+  optionality_model_routing: OptionalityModelRoutingAssessment;
+  portfolio_impact_requirements: PortfolioImpactRequirements;
+  commercial_model_warnings: string[];
 }

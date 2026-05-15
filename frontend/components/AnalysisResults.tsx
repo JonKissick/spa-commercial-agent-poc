@@ -10,6 +10,7 @@ import type {
   ValuationInputItem,
   ValuationInputPack,
 } from "@/lib/types";
+import CommercialModelOutputs from "./CommercialModelOutputs";
 import JsonBlock from "./JsonBlock";
 import StatusBadge from "./StatusBadge";
 
@@ -147,6 +148,7 @@ export default function AnalysisResults({ result }: { result: CommercialEvaluati
       <ClauseCoverageTable items={result.clause_coverage} />
       <ProvisionTable items={result.provision_register} />
       <ValuationPackCard pack={result.valuation_input_pack} />
+      <CommercialModelOutputs outputs={result.analysis_model_outputs} />
       <OptionalityTable items={result.optionality_register} />
       <div className="split-grid"><ContextCard title="Market Context" assessment={market} /><ContextCard title="Portfolio Fit" assessment={portfolio} /><RecommendationCard recommendation={recommendation} /></div>
       {result.limitations?.length ? <section className="card wide"><h3>Limitations</h3><ul>{result.limitations.map((item) => <li key={item}>{item}</li>)}</ul></section> : null}

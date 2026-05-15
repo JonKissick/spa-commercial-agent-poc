@@ -99,3 +99,10 @@ td p { margin: 6px 0 0; font-size: 0.86rem; }
   .form-grid, .filters, .data-grid, .two-column-list, .split-grid, .upload-row { grid-template-columns: 1fr; }
   .page-shell { width: min(100% - 24px, 1440px); padding-top: 24px; }
 }
+
+.commercial-model-section { border-color: #bfd4d2; }
+.commercial-model-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.commercial-model-grid article { border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); padding: 12px; min-width: 0; }
+.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.commercial-model-grid .json-block { max-height: 220px; }
+@media (max-width: 980px) { .commercial-model-grid, .compact-grid { grid-template-columns: 1fr; } }

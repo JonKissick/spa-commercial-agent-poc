@@ -1,3 +1,4 @@
+from app.analysis_models.model_runner import run_analysis_models
 from app.config import get_settings
 from app.llm_providers.base import LLMProviderConfigurationError, LLMProviderError
 from app.llm_providers.factory import create_llm_provider
@@ -72,10 +73,11 @@ def _validate_and_attach_rag_summary(
     rag_context_bundle: RagContextBundle | None,
 ) -> CommercialEvaluationResponse:
     validated = validate_commercial_evaluation(response)
+    validated.analysis_model_outputs = run_analysis_models(validated)
     if rag_context_bundle is not None:
         # prompt_context can contain retrieved chunk text; the API response only exposes non-sensitive citations/summary.
         validated.rag_context_summary = rag_context_bundle.model_copy(update={"prompt_context": ""})
-    return validated
+    return validate_commercial_evaluation(validated)
 
 
 def _normalize_contract_text(contract_text: str) -> str:

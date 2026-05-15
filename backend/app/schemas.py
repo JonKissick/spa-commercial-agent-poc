@@ -2,6 +2,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.analysis_models.schemas import AnalysisModelOutputs
 from app.rag.schemas import RagContextBundle
 
 
@@ -312,6 +313,7 @@ class CommercialEvaluationResponse(BaseModel):
     limitations: list[str] = Field(default_factory=list)
     document_metadata: DocumentMetadata | None = None
     rag_context_summary: RagContextBundle | None = None
+    analysis_model_outputs: AnalysisModelOutputs | None = None
     # Compatibility fields consumed by the current frontend shell.
     market_context: MarketContextAssessment | None = None
     portfolio_fit: PortfolioFitAssessment | None = None

@@ -262,6 +262,24 @@ Suggested valuation methods are only method labels, such as `scenario_analysis`,
 
 Stage 4 does not calculate option value or any other quantitative result. It only identifies optionality and the method/data that a later analyst workflow might need.
 
+
+## Stage 7A Commercial Model Framework
+
+The backend now adds deterministic `analysis_model_outputs` after extraction, taxonomy coverage, valuation input mapping, and optionality routing. This framework does not call an LLM and does not calculate value. It determines the future commercial model route and the missing inputs required before a later manual scenario NPV calculator can be used.
+
+Outputs include:
+
+- `deal_structure`: buyer/seller/swap/tolling/portfolio role, DES/FOB/delivered basis, origin, destination, title/risk transfer, and logistics responsibility where supported.
+- `npv_readiness`: whether enough contract, market, logistics, portfolio, and manual assumptions exist to calculate later. `can_calculate_npv_now` remains false in this stage unless all critical inputs are supplied and validated.
+- `landed_value_or_netback`: deterministic model selector for DES purchase, FOB purchase, DES sale, FOB sale, netback, landed cost, or unclear.
+- `scenario_model_requirements`: base, upside, downside, stress, sensitivity, and break-even input requirements.
+- `optionality_model_routing`: maps embedded options to future methods such as spread option, swing option, make-up value, scenario analysis, credit risk adjustment, or operational constraint analysis.
+- `portfolio_impact_requirements`: portfolio exposure, concentration, hedge, liquidity, operational capacity, and risk appetite inputs needed before portfolio impact can be assessed.
+
+DES/FOB logic is evidence-constrained. DES/ex-ship/delivered terms route toward destination value and terminal/downstream assumptions. FOB/free-on-board terms route toward origin/loading port, destination, freight, boil-off, port/canal, shipping duration, and terminal assumptions. If role, basis, origin, or destination are unclear, the framework marks them unclear and requests analyst validation.
+
+Stage 7A does not calculate NPV, IRR, fair value, quantitative option valuation, expected profit, margin, trade P&L, or investment conclusions.
+
 ## Tests
 
 ```bash
