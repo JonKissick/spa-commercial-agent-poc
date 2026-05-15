@@ -1,35 +1,5 @@
 import type { ProvisionRegisterItem } from "@/lib/types";
-
-interface ProvisionRegisterProps {
-  items: ProvisionRegisterItem[];
-}
-
+interface ProvisionRegisterProps { items: ProvisionRegisterItem[]; }
 export default function ProvisionRegister({ items }: ProvisionRegisterProps) {
-  return (
-    <article className="card wide">
-      <div className="card-header">
-        <h2>Provision Register</h2>
-        <span className="badge">{items.length} items</span>
-      </div>
-
-      <div className="register-list">
-        {items.map((item) => (
-          <section className="register-item" key={item.id}>
-            <div className="item-title">
-              <strong>{item.id}</strong>
-              <span className="badge">{item.category}</span>
-              <span className="badge">{item.valuation_impact}</span>
-              <span className="badge">{item.evidence_status}</span>
-            </div>
-            <p>{item.interpretation}</p>
-            {item.assumption_required && (
-              <div className="evidence-note">
-                <strong>Assumption required</strong>: {item.assumption_required}
-              </div>
-            )}
-          </section>
-        ))}
-      </div>
-    </article>
-  );
+  return <article className="card wide"><div className="card-header"><h2>Provision Register</h2><span className="badge">{items.length} items</span></div><div className="register-list">{items.map((item) => <section className="register-item" key={item.id}><div className="item-title"><strong>{item.id}</strong><span className="badge">{item.category}</span><span className="badge">{item.valuation_impact}</span><span className="badge">{item.evidence_status}</span></div><p>{item.commercial_meaning ?? item.interpretation ?? item.title ?? "No interpretation supplied."}</p>{item.assumption_required && <div className="evidence-note"><strong>Assumption required</strong>: {item.assumption_required}</div>}{item.warnings?.length ? <ul className="warning-list">{item.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul> : null}</section>)}</div></article>;
 }

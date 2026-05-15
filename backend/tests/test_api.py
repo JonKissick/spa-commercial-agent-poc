@@ -63,3 +63,29 @@ def test_analyze_in_mock_mode_includes_document_metadata(monkeypatch, tmp_path) 
     assert metadata["storage_provider"] == "local"
     assert metadata["storage_uri"] is None
     assert "Sample SPA text" not in str(metadata)
+
+
+def test_system_status_endpoint_exposes_only_non_secret_status(monkeypatch) -> None:
+    from app.config import get_settings
+
+    monkeypatch.setenv("LLM_PROVIDER", "mock")
+    monkeypatch.setenv("DOCUMENT_STORE_PROVIDER", "local")
+    monkeypatch.setenv("RAG_PROVIDER", "local")
+    monkeypatch.setenv("RAG_ENABLED", "true")
+    get_settings.cache_clear()
+    client = TestClient(app)
+
+    response = client.get("/system/status")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["llm_provider"] == "mock"
+    assert payload["document_store_provider"] == "local"
+    assert payload["rag_provider"] == "local"
+    assert payload["rag_enabled"] is True
+    serialized = str(payload).lower()
+    assert "api_key" not in serialized
+    assert "bucket" not in serialized
+    assert "local_document_dir" not in serialized
+    assert "prompt" not in serialized

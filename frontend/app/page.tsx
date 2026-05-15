@@ -1,69 +1,112 @@
 "use client";
 
-import { useState } from "react";
-import ContractSummaryCard from "@/components/ContractSummaryCard";
-import OptionalityRegister from "@/components/OptionalityRegister";
-import ProvisionRegister from "@/components/ProvisionRegister";
-import RecommendationMemo from "@/components/RecommendationMemo";
-import UploadPanel from "@/components/UploadPanel";
-import ValuationInputPack from "@/components/ValuationInputPack";
-import { analyzeContract } from "@/lib/api";
-import type { CommercialEvaluationResponse } from "@/lib/types";
+import { useCallback, useEffect, useState } from "react";
+import AnalyzeContractPanel from "@/components/AnalyzeContractPanel";
+import RagIngestPanel from "@/components/RagIngestPanel";
+import RagLibraryPanel from "@/components/RagLibraryPanel";
+import RagRetrievalPanel from "@/components/RagRetrievalPanel";
+import SystemStatusPanel from "@/components/SystemStatusPanel";
+import WorkbenchTabs, { type WorkbenchTab } from "@/components/WorkbenchTabs";
+import { analyzeContract, getHealth, getRagKnowledge, getSystemStatus } from "@/lib/api";
+import type { CommercialEvaluationResponse, HealthResponse, KnowledgeDocumentMetadata, SystemStatus } from "@/lib/types";
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>("analyze");
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<CommercialEvaluationResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [knowledge, setKnowledge] = useState<KnowledgeDocumentMetadata[]>([]);
+  const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
+  const [systemError, setSystemError] = useState<string | null>(null);
+
+  const refreshKnowledge = useCallback(async () => {
+    setKnowledgeLoading(true);
+    setKnowledgeError(null);
+    try {
+      setKnowledge(await getRagKnowledge());
+    } catch (err) {
+      setKnowledgeError(err instanceof Error ? err.message : "Unable to load RAG knowledge.");
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  }, []);
+
+  const refreshSystem = useCallback(async () => {
+    setSystemError(null);
+    try {
+      const [healthResponse, statusResponse] = await Promise.all([getHealth(), getSystemStatus()]);
+      setHealth(healthResponse);
+      setSystemStatus(statusResponse);
+    } catch (err) {
+      setSystemError(err instanceof Error ? err.message : "Unable to load system status.");
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshKnowledge();
+    refreshSystem();
+  }, [refreshKnowledge, refreshSystem]);
 
   async function handleAnalyze() {
     if (!file) {
-      setError("Choose a PDF before running analysis.");
+      setAnalysisError("Choose a PDF before running analysis.");
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    setIsAnalyzing(true);
+    setAnalysisError(null);
 
     try {
-      const response = await analyzeContract(file);
-      setResult(response);
+      setResult(await analyzeContract(file));
+      await refreshKnowledge();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed.");
+      setAnalysisError(err instanceof Error ? err.message : "Analysis failed.");
     } finally {
-      setIsLoading(false);
+      setIsAnalyzing(false);
     }
   }
 
   return (
     <main className="page-shell">
-      <section className="intro">
+      <section className="intro workbench-hero">
         <p className="eyebrow">Commercial SPA review POC</p>
         <h1>SPA Commercial Evaluation Agent</h1>
         <p>
-          Upload an SPA PDF to exercise the V1 pipeline shape: text extraction,
-          placeholder analysis, and structured commercial outputs for review.
+          A local workbench for PDF analysis, structured commercial outputs, RAG knowledge ingestion,
+          retrieval testing, and non-secret system status.
         </p>
       </section>
 
-      <UploadPanel
-        file={file}
-        isLoading={isLoading}
-        error={error}
-        onFileChange={setFile}
-        onAnalyze={handleAnalyze}
-      />
+      <WorkbenchTabs activeTab={activeTab} onChange={setActiveTab} />
 
-      {isLoading && <div className="status-panel">Analyzing uploaded PDF...</div>}
+      {activeTab === "analyze" && (
+        <AnalyzeContractPanel
+          file={file}
+          result={result}
+          error={analysisError}
+          isLoading={isAnalyzing}
+          knowledge={knowledge}
+          knowledgeError={knowledgeError}
+          knowledgeLoading={knowledgeLoading}
+          onFileChange={setFile}
+          onAnalyze={handleAnalyze}
+        />
+      )}
 
-      {result && (
-        <section className="results-grid" aria-label="Commercial evaluation results">
-          <ContractSummaryCard summary={result.contract_summary} />
-          <ProvisionRegister items={result.provision_register} />
-          <ValuationInputPack pack={result.valuation_input_pack} />
-          <OptionalityRegister items={result.optionality_register} />
-          <RecommendationMemo recommendation={result.recommendation} />
-        </section>
+      {activeTab === "library" && (
+        <RagLibraryPanel knowledge={knowledge} isLoading={knowledgeLoading} error={knowledgeError} onRefresh={refreshKnowledge} />
+      )}
+
+      {activeTab === "ingest" && <RagIngestPanel onIngested={refreshKnowledge} />}
+
+      {activeTab === "retrieval" && <RagRetrievalPanel />}
+
+      {activeTab === "status" && (
+        <SystemStatusPanel health={health} status={systemStatus} knowledge={knowledge} error={systemError} onRefresh={refreshSystem} />
       )}
     </main>
   );

@@ -46,6 +46,7 @@ The API will be available at `http://localhost:8000` unless that port is already
 
 - `GET /health`: returns `{ "status": "ok" }`.
 - `POST /analyze`: accepts a text-based PDF upload as multipart form data and returns a structured commercial evaluation.
+- `GET /system/status`: returns non-secret local POC status for the frontend workbench.
 
 ## Test `/analyze`
 

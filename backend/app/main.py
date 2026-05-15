@@ -32,6 +32,20 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/system/status")
+def system_status() -> dict[str, object]:
+    current_settings = get_settings()
+    return {
+        "status": "ok",
+        "llm_provider": current_settings.llm_provider,
+        "document_store_provider": current_settings.document_store_provider,
+        "rag_provider": current_settings.rag_provider,
+        "rag_enabled": current_settings.rag_enabled,
+        "local_dev_mode": True,
+        "note": "Local POC status only. Sensitive configuration and source document contents are not exposed.",
+    }
+
+
 @app.post("/analyze", response_model=CommercialEvaluationResponse)
 async def analyze(file: UploadFile = File(...)) -> CommercialEvaluationResponse:
     if file.content_type not in {"application/pdf", "application/x-pdf"}:
