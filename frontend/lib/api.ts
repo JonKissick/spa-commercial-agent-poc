@@ -9,6 +9,7 @@ import type {
   RetrievalResult,
   RetrieveRagPayload,
   SystemStatus,
+  SeedPackResult,
 } from "./types";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -55,4 +56,8 @@ export async function getSystemStatus(): Promise<SystemStatus> {
 
 export async function calculateNpv(payload: NpvCalculationRequest): Promise<NpvCalculationResponse> {
   return requestJson<NpvCalculationResponse>("/calculators/npv", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function seedRagStarterPack(): Promise<SeedPackResult> {
+  return requestJson<SeedPackResult>("/rag/seed", { method: "POST" });
 }

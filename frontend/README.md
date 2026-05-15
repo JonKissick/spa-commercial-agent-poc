@@ -41,3 +41,11 @@ Analysts must review and confirm all assumptions before pressing `Calculate Scen
 The NPV Calculator tab now includes sensitivity settings for market price, contract price, freight cost, and discount rate shifts. Results display simple tables grouped by scenario and variable.
 
 The tab also displays break-even outputs by scenario. These outputs use flat annual margin assumptions and manual inputs only. No charts, stochastic simulation, live market data, AI/RAG calculation, or quantitative optionality value is included.
+
+## Stage 8A Starter RAG Knowledge Pack
+
+The RAG Library tab includes `Load Starter Knowledge Pack`, which calls the local-dev `POST /rag/seed` endpoint and refreshes the library. The pack loads approved internal LNG SPA guidance for pricing, DES/FOB modelling, volume and take-or-pay mapping, optionality, credit and force majeure risk, portfolio fit, trader recommendations, good/bad/corrected analysis examples, valuation-claim guardrails, market fundamentals, procedure notes, and glossary terms.
+
+After loading the pack, the RAG Library should show fewer missing knowledge suggestions, and the RAG Retrieval Test tab can be used with queries such as `pricing formula index slope`, `FOB buyer freight boil-off`, or `destination flexibility diversion spread option`.
+
+This remains a local POC workflow. The seed action does not add embeddings, Bedrock Knowledge Bases, auth, a database, AWS deployment, or production access controls. Bad analysis examples are warning-marked for critique/comparison only.

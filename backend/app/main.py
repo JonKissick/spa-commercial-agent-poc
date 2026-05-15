@@ -12,6 +12,7 @@ from app.rag.factory import create_rag_index
 from app.rag.ingestion import ingest_knowledge_text
 from app.rag.retrieval import retrieve_knowledge
 from app.rag.schemas import IngestTextRequest, IngestionResult, KnowledgeDocumentMetadata, RetrievalResult, RetrieveRequest
+from app.rag.seed_pack import SeedPackResult, seed_starter_knowledge_pack
 from app.schemas import CommercialEvaluationResponse, DocumentMetadata
 from app.validation import CommercialEvaluationValidationError
 
@@ -110,6 +111,12 @@ def _to_document_metadata(stored_document: StoredDocument) -> DocumentMetadata:
 def calculator_npv(request: NpvCalculationRequest) -> NpvCalculationResponse:
     # Deterministic manual-assumption calculator. Does not call LLMs, RAG, or market data services.
     return calculate_npv(request)
+
+
+@app.post("/rag/seed", response_model=SeedPackResult)
+def rag_seed() -> SeedPackResult:
+    # Local POC endpoint only. Seeds static internal guidance into the local RAG index.
+    return seed_starter_knowledge_pack()
 
 
 @app.post("/rag/ingest-text", response_model=IngestionResult)

@@ -173,6 +173,49 @@ When enabled, the pipeline builds focused local keyword queries, retrieves appro
 
 Bad analysis examples are excluded from analysis context by default. Draft, deprecated, superseded, or unapproved materials are excluded or warning-marked according to metadata and config. This stage does not add embeddings, Bedrock Knowledge Bases, external retrieval, auth, a database, or production access controls.
 
+
+## Stage 8A Starter RAG Seed Pack
+
+The backend includes a deterministic starter knowledge pack in `app/rag/seed_pack.py`. It seeds concise internal guidance for LNG SPA pricing, DES/FOB modelling, volume and take-or-pay mapping, destination flexibility, make-up and carry-forward rights, price review, credit support, force majeure, portfolio fit, trader-ready recommendations, good/bad/corrected analysis examples, unsupported valuation-claim policy, market fundamentals, internal review procedure, and glossary definitions.
+
+Seed the local RAG index from the backend directory:
+
+```bash
+.venv/bin/python scripts/seed_rag.py
+```
+
+The script skips duplicates by title, knowledge type, and version, then prints entries attempted, entries ingested, duplicates skipped, and warnings. The same seed action is also exposed for local development through:
+
+- `POST /rag/seed`: loads the starter pack into the local RAG index.
+
+The seed pack is metadata-rich and approved for RAG by default:
+
+- `approval_status=approved`
+- `approved_for_rag=true`
+- `owner=commercial`
+- `confidentiality=internal`
+- `commodity=lng`
+- `contract_type=spa`
+- `version=v1`
+
+Bad analysis examples are intentionally included for critique/comparison and are warning-marked. They should not be used as positive guidance or as contract evidence.
+
+Example retrieval checks after seeding:
+
+```json
+{"query": "pricing formula index slope currency", "top_k": 5}
+```
+
+```json
+{"query": "FOB buyer freight boil-off destination market", "top_k": 5}
+```
+
+```json
+{"query": "destination flexibility diversion spread option", "top_k": 5}
+```
+
+Stage 8A still uses local keyword retrieval only. It does not add embeddings, Bedrock Knowledge Bases, external LLM calls, AWS deployment, auth, a database, or production RAG access controls.
+
 ## Stage 2 Taxonomy
 
 The backend includes a deterministic SPA commercial taxonomy in `app/taxonomy.py`. It covers:

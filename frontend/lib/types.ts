@@ -464,3 +464,13 @@ export interface BreakEvenResult {
   notes: string[];
   warnings: string[];
 }
+
+
+export interface SeedPackResult {
+  entries_attempted: number;
+  entries_ingested: number;
+  duplicates_skipped: number;
+  warnings: string[];
+  ingested: IngestionResult[];
+  skipped_titles: string[];
+}
