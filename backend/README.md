@@ -2,7 +2,7 @@
 
 FastAPI backend for the SPA Commercial Evaluation Agent POC.
 
-Stage 2 extracts embedded PDF text with `pypdf`, optionally sends that text to OpenAI for structured commercial analysis, validates the result with Pydantic, and returns a `CommercialEvaluationResponse` with a taxonomy-driven provision register and clause coverage map.
+Stage 3 extracts embedded PDF text with `pypdf`, optionally sends that text to OpenAI for structured commercial analysis, validates the result with Pydantic, and returns a `CommercialEvaluationResponse` with a taxonomy-driven provision register, clause coverage map, and structured valuation input pack.
 
 If `OPENAI_API_KEY` is not set, the backend keeps working with the local mock fallback.
 
@@ -94,6 +94,24 @@ Provision outputs use evidence statuses to separate contract evidence from assum
 
 Low-confidence provisions and insufficient-evidence provisions must include warnings.
 
+
+## Stage 3 Valuation Input Pack
+
+The response includes a structured `valuation_input_pack` that translates extracted SPA provisions into model input candidates for later analyst work. It does not calculate value.
+
+The pack separates:
+
+- contract-extracted or contract-inferred inputs
+- analyst assumptions required
+- missing market data
+- missing portfolio data
+- valuation warnings
+- source provision ID links where practical
+
+Structured fields include pricing, volume, delivery, duration, flexibility, make-up rights, price review, penalties, credit support, quality, tax/change-in-law exposure, operational constraints, termination economics, and grouped DCF/optionality/risk/portfolio input candidates.
+
+The backend deliberately does not calculate NPV, IRR, option value, fair value, expected margin, trade P&L, or final valuation. Deterministic validation removes prohibited valuation-result claims from valuation input fields and adds a warning.
+
 ## Tests
 
 ```bash
@@ -102,11 +120,11 @@ pytest -q
 
 No test requires a real OpenAI API call.
 
-## Stage 2 Limitations
+## Stage 3 Limitations
 
 - Text extraction only supports embedded PDF text. Scanned PDFs require OCR in a later stage.
 - The OpenAI analysis is a first-pass extraction and commercial interpretation workflow, not legal advice.
-- No final valuation, DCF model, quantitative option valuation, or portfolio optimization is performed.
+- No final valuation, DCF model, NPV, IRR, option value, fair value, expected margin, trade P&L, quantitative option valuation, or portfolio optimization is performed.
 - Market and portfolio conclusions require manual assumptions unless those assumptions are supplied in the uploaded document.
 - Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
 - No database, auth, deployment, Docker, report export, or multi-agent orchestration is included.

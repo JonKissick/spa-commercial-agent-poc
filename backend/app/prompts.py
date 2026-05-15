@@ -61,6 +61,20 @@ Clause coverage requirements:
 - If status is not_identified, evidence_summary must state that no supporting
   clause was identified.
 
+
+Valuation input pack requirements:
+- Do not perform final valuation.
+- Do not calculate NPV, IRR, option value, fair value, expected margin, trade P&L, or expected profit.
+- Only translate contract provisions into model input candidates for later analyst work.
+- If a model input is not found in the contract, mark it as missing or assumption required.
+- If market data is needed, list it under missing_market_data.
+- If portfolio data is needed, list it under missing_portfolio_data.
+- If analyst judgement is needed, list it under missing_analyst_assumptions.
+- For each important valuation input, identify source_provision_ids where possible.
+- If the source provision is weak or missing, include a warning.
+- The valuation input pack should help a commercial analyst prepare later DCF, optionality, risk, and portfolio analysis without claiming any result.
+- Populate structured valuation_input_pack fields where supported: price_basis, pricing_formula, price_index, price_adjustments, currency, volume_obligation, volume_range, annual_contract_quantity, take_or_pay_obligation, delivery_point, delivery_terms, duration, start_date, end_date, extension_rights, destination_flexibility, volume_flexibility, make_up_rights, carry_forward_rights, price_review_or_reopener, penalties_or_liquidated_damages, credit_support, quality_specifications, tax_or_change_in_law_exposure, operational_constraints, termination_economics, dcf_relevant_inputs, optionality_relevant_inputs, risk_adjustment_inputs, portfolio_relevant_inputs, missing_analyst_assumptions, missing_market_data, missing_portfolio_data, and valuation_warnings.
+
 Each provision_register item must include:
 - id
 - category

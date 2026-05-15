@@ -16,6 +16,7 @@ from app.schemas import (
     ProvisionRegisterItem,
     RecommendationValue,
     ValuationImpact,
+    ValuationInputItem,
     ValuationInputPack,
 )
 from app.taxonomy import SPA_TAXONOMY, taxonomy_categories
@@ -65,7 +66,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     clause_coverage = _build_mock_clause_coverage()
 
     market_context = MarketContextAssessment(
-        summary="Market context is not evaluated in Stage 2 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
+        summary="Market context is not evaluated in Stage 3 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
         required_market_assumptions=[
             "Relevant commodity forward curve.",
             "Regional basis differentials.",
@@ -75,7 +76,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
         confidence=Confidence.LOW,
     )
     portfolio_fit = PortfolioFitAssessment(
-        summary="Portfolio fit is not evaluated in Stage 2 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
+        summary="Portfolio fit is not evaluated in Stage 3 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
         required_portfolio_assumptions=[
             "Current portfolio exposure by tenor and location.",
             "Operational capacity and delivery constraints.",
@@ -86,7 +87,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     )
     recommendation = DealRecommendation(
         recommendation=RecommendationValue.INSUFFICIENT_EVIDENCE,
-        memo="Stage 2 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
+        memo="Stage 3 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
         key_conditions=[
             "Complete validated clause extraction.",
             "Confirm valuation model inputs.",
@@ -166,19 +167,99 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
             ),
         ],
         valuation_input_pack=ValuationInputPack(
-            pricing_inputs=[
-                "Contract price formula or fixed price schedule.",
-                "Index, FX, inflation, and escalation assumptions.",
+            price_basis=[
+                ValuationInputItem(
+                    name="Contract price basis",
+                    value="Index-linked pricing basis identified in extracted text sample; exact formula requires analyst validation.",
+                    source_provision_ids=["PR-001"],
+                    evidence_status=EvidenceStatus.INFERRED_FROM_CONTRACT,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Mock fallback does not extract a complete price formula."],
+                )
             ],
-            volume_inputs=[
-                "Annual contract quantity.",
-                "Minimum take, maximum take, and tolerance bands.",
+            pricing_formula=[
+                ValuationInputItem(
+                    name="Pricing formula",
+                    value="Pricing uses an index formula; full index, premium/discount, FX, and escalation mechanics are not extracted in fallback mode.",
+                    source_provision_ids=["PR-001"],
+                    evidence_status=EvidenceStatus.INFERRED_FROM_CONTRACT,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Formula is incomplete and must be checked against the contract."],
+                )
             ],
-            timing_inputs=["Start date, end date, delivery schedule, and review windows."],
-            risk_inputs=["Credit support, termination triggers, force majeure scope, and penalties."],
-            required_analyst_assumptions=[
-                "Map extracted clauses to financial model inputs.",
+            volume_obligation=[
+                ValuationInputItem(
+                    name="Volume obligation",
+                    value="Seller shall deliver crude oil volumes; exact quantity is not extracted in fallback mode.",
+                    source_provision_ids=["PR-001"],
+                    evidence_status=EvidenceStatus.EXTRACTED_FROM_CONTRACT,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Exact ACQ/DCQ/cargo quantity must be confirmed."],
+                )
+            ],
+            volume_flexibility=[
+                ValuationInputItem(
+                    name="Volume flexibility right",
+                    value="Potential volume flexibility flagged as weak/unclear; no firm swing quantity extracted.",
+                    source_provision_ids=["PR-002"],
+                    evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Source provision is weak/unclear and should not be valued without validation."],
+                )
+            ],
+            credit_support=[
+                ValuationInputItem(
+                    name="Credit support",
+                    value="Credit support requires review; fallback evidence is insufficient.",
+                    source_provision_ids=["PR-003"],
+                    evidence_status=EvidenceStatus.INSUFFICIENT_EVIDENCE,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Insufficient evidence for credit support terms."],
+                )
+            ],
+            dcf_relevant_inputs=[
+                ValuationInputItem(
+                    name="DCF input candidates",
+                    value=["Price formula", "Volume obligation", "Delivery schedule", "Term"],
+                    source_provision_ids=["PR-001"],
+                    evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Input candidates only; no DCF has been run."],
+                )
+            ],
+            optionality_relevant_inputs=[
+                ValuationInputItem(
+                    name="Optionality input candidates",
+                    value=["Volume flexibility", "Destination flexibility", "Make-up rights"],
+                    source_provision_ids=["PR-002"],
+                    evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
+                    confidence=Confidence.LOW,
+                    analyst_assumption_needed=True,
+                    warnings=["Input candidates only; no option valuation has been run."],
+                )
+            ],
+            missing_analyst_assumptions=[
+                "Confirm exact price formula, index, premium/discount, FX, and escalation mechanics.",
+                "Confirm exact annual contract quantity, delivery schedule, term, tolerances, and take-or-pay mechanics.",
                 "Confirm whether missing data is absent from the contract or not yet extracted.",
+            ],
+            missing_market_data=[
+                "Forward curve for the relevant commodity and delivery location.",
+                "Basis differentials, volatility, liquidity, FX, and inflation assumptions.",
+            ],
+            missing_portfolio_data=[
+                "Current portfolio exposure by tenor and delivery location.",
+                "Operational capacity, concentration limits, and counterparty exposure limits.",
+            ],
+            valuation_warnings=[
+                "Stage 3 prepares valuation input candidates only; no NPV, IRR, fair value, option value, expected margin, or trade P&L has been calculated.",
+                "Volume clause coverage is not present, so quantity inputs require analyst validation.",
             ],
             evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
         ),
@@ -206,7 +287,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
         portfolio_fit_assessment=portfolio_fit,
         deal_recommendation=recommendation,
         limitations=[
-            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 2 analysis.",
+            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 3 analysis.",
             "Market and portfolio conclusions require manual assumptions unless those assumptions are explicitly supplied in the uploaded document.",
         ],
     )

@@ -113,13 +113,94 @@ class ClauseCoverageItem(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+class ValuationInputItem(BaseModel):
+    name: str
+    value: str | list[str] | dict[str, str] | None = None
+    source_provision_ids: list[str] = Field(default_factory=list)
+    evidence_status: EvidenceStatus
+    confidence: Confidence
+    analyst_assumption_needed: bool = False
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ValuationInputPack(BaseModel):
+    price_basis: list[ValuationInputItem] = Field(default_factory=list)
+    pricing_formula: list[ValuationInputItem] = Field(default_factory=list)
+    price_index: list[ValuationInputItem] = Field(default_factory=list)
+    price_adjustments: list[ValuationInputItem] = Field(default_factory=list)
+    currency: list[ValuationInputItem] = Field(default_factory=list)
+    volume_obligation: list[ValuationInputItem] = Field(default_factory=list)
+    volume_range: list[ValuationInputItem] = Field(default_factory=list)
+    annual_contract_quantity: list[ValuationInputItem] = Field(default_factory=list)
+    take_or_pay_obligation: list[ValuationInputItem] = Field(default_factory=list)
+    delivery_point: list[ValuationInputItem] = Field(default_factory=list)
+    delivery_terms: list[ValuationInputItem] = Field(default_factory=list)
+    duration: list[ValuationInputItem] = Field(default_factory=list)
+    start_date: list[ValuationInputItem] = Field(default_factory=list)
+    end_date: list[ValuationInputItem] = Field(default_factory=list)
+    extension_rights: list[ValuationInputItem] = Field(default_factory=list)
+    destination_flexibility: list[ValuationInputItem] = Field(default_factory=list)
+    volume_flexibility: list[ValuationInputItem] = Field(default_factory=list)
+    make_up_rights: list[ValuationInputItem] = Field(default_factory=list)
+    carry_forward_rights: list[ValuationInputItem] = Field(default_factory=list)
+    price_review_or_reopener: list[ValuationInputItem] = Field(default_factory=list)
+    penalties_or_liquidated_damages: list[ValuationInputItem] = Field(default_factory=list)
+    credit_support: list[ValuationInputItem] = Field(default_factory=list)
+    quality_specifications: list[ValuationInputItem] = Field(default_factory=list)
+    tax_or_change_in_law_exposure: list[ValuationInputItem] = Field(default_factory=list)
+    operational_constraints: list[ValuationInputItem] = Field(default_factory=list)
+    termination_economics: list[ValuationInputItem] = Field(default_factory=list)
+    dcf_relevant_inputs: list[ValuationInputItem] = Field(default_factory=list)
+    optionality_relevant_inputs: list[ValuationInputItem] = Field(default_factory=list)
+    risk_adjustment_inputs: list[ValuationInputItem] = Field(default_factory=list)
+    portfolio_relevant_inputs: list[ValuationInputItem] = Field(default_factory=list)
+    missing_analyst_assumptions: list[str] = Field(default_factory=list)
+    missing_market_data: list[str] = Field(default_factory=list)
+    missing_portfolio_data: list[str] = Field(default_factory=list)
+    valuation_warnings: list[str] = Field(default_factory=list)
+    evidence_status: EvidenceStatus = EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED
+    # Compatibility fields consumed by the current frontend shell.
     pricing_inputs: list[str] = Field(default_factory=list)
     volume_inputs: list[str] = Field(default_factory=list)
     timing_inputs: list[str] = Field(default_factory=list)
     risk_inputs: list[str] = Field(default_factory=list)
     required_analyst_assumptions: list[str] = Field(default_factory=list)
-    evidence_status: EvidenceStatus
+
+    @model_validator(mode="after")
+    def populate_compatibility_fields(self) -> "ValuationInputPack":
+        if not self.pricing_inputs:
+            self.pricing_inputs = _summarize_input_items(self.price_basis + self.pricing_formula + self.price_index)
+        if not self.volume_inputs:
+            self.volume_inputs = _summarize_input_items(self.volume_obligation + self.volume_range + self.annual_contract_quantity)
+        if not self.timing_inputs:
+            self.timing_inputs = _summarize_input_items(self.duration + self.start_date + self.end_date + self.extension_rights)
+        if not self.risk_inputs:
+            self.risk_inputs = _summarize_input_items(
+                self.credit_support
+                + self.penalties_or_liquidated_damages
+                + self.tax_or_change_in_law_exposure
+                + self.operational_constraints
+                + self.termination_economics
+            )
+        if not self.required_analyst_assumptions:
+            self.required_analyst_assumptions = list(self.missing_analyst_assumptions)
+        return self
+
+
+def _summarize_input_items(items: list[ValuationInputItem]) -> list[str]:
+    summaries: list[str] = []
+    for item in items:
+        value = item.value
+        if isinstance(value, list):
+            value_text = ", ".join(value)
+        elif isinstance(value, dict):
+            value_text = ", ".join(f"{key}: {val}" for key, val in value.items())
+        elif value is None:
+            value_text = "not extracted"
+        else:
+            value_text = value
+        summaries.append(f"{item.name}: {value_text}")
+    return summaries
 
 
 class OptionalityRegisterItem(BaseModel):

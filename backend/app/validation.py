@@ -1,5 +1,6 @@
 from app.schemas import CommercialEvaluationResponse, Confidence, CoverageStatus, EvidenceStatus
 from app.taxonomy import SPA_TAXONOMY, taxonomy_categories
+from app.valuation_inputs import normalize_valuation_input_pack
 
 NO_FULL_VALUATION_LIMITATION = "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 2 analysis."
 MARKET_PORTFOLIO_LIMITATION = "Market and portfolio conclusions require manual assumptions unless those assumptions are explicitly supplied in the uploaded document."
@@ -12,6 +13,7 @@ class CommercialEvaluationValidationError(ValueError):
 def validate_commercial_evaluation(response: CommercialEvaluationResponse) -> CommercialEvaluationResponse:
     _validate_clause_coverage(response)
     _validate_provisions(response)
+    normalize_valuation_input_pack(response)
 
     _ensure_limitation(response, NO_FULL_VALUATION_LIMITATION, ["no full valuation", "dcf", "option valuation"])
     _ensure_limitation(response, MARKET_PORTFOLIO_LIMITATION, ["market", "portfolio", "manual assumptions"])
