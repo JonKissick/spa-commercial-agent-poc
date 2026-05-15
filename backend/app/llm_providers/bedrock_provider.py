@@ -15,7 +15,7 @@ class BedrockProvider:
         self.region_name = region_name
         self.model_id = model_id
 
-    def analyze_contract(self, contract_text: str) -> CommercialEvaluationResponse:
+    def analyze_contract(self, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         if not self.region_name:
             raise LLMProviderConfigurationError("AWS_REGION is not configured.")
         if not self.model_id:
@@ -27,7 +27,7 @@ class BedrockProvider:
             raise LLMProviderConfigurationError("boto3 is required for LLM_PROVIDER=bedrock.") from exc
 
         client = boto3.client("bedrock-runtime", region_name=self.region_name)
-        prompt = self._build_json_prompt(contract_text)
+        prompt = self._build_json_prompt(contract_text, rag_context)
         body = self._build_anthropic_body(prompt)
 
         try:
@@ -47,13 +47,13 @@ class BedrockProvider:
         except Exception as exc:
             raise LLMProviderError("Bedrock analysis request failed.") from exc
 
-    def _build_json_prompt(self, contract_text: str) -> str:
+    def _build_json_prompt(self, contract_text: str, rag_context: str | None = None) -> str:
         schema = json.dumps(CommercialEvaluationResponse.model_json_schema(), indent=2)
         return (
             f"{STAGE_1_SYSTEM_PROMPT}\n\n"
             "Return only valid JSON matching this JSON schema. Do not wrap it in markdown.\n"
             f"JSON schema:\n{schema}\n\n"
-            f"{build_stage_1_user_prompt(contract_text)}"
+            f"{build_stage_1_user_prompt(contract_text, rag_context=rag_context)}"
         )
 
     def _build_anthropic_body(self, prompt: str) -> dict[str, Any]:

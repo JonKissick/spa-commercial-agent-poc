@@ -2,6 +2,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.rag.schemas import RagContextBundle
+
 
 class ProvisionCategory(StrEnum):
     PRICING = "pricing"
@@ -309,6 +311,7 @@ class CommercialEvaluationResponse(BaseModel):
     deal_recommendation: DealRecommendation
     limitations: list[str] = Field(default_factory=list)
     document_metadata: DocumentMetadata | None = None
+    rag_context_summary: RagContextBundle | None = None
     # Compatibility fields consumed by the current frontend shell.
     market_context: MarketContextAssessment | None = None
     portfolio_fit: PortfolioFitAssessment | None = None

@@ -77,3 +77,22 @@ class RetrieveRequest(BaseModel):
     query: str
     filters: dict[str, Any] | None = None
     top_k: int = 5
+
+
+class RagContextItem(BaseModel):
+    chunk_id: str
+    knowledge_id: str
+    title: str
+    knowledge_type: KnowledgeType
+    analysis_section: str | None = None
+    text_excerpt: str
+    score: float
+    warnings: list[str] = Field(default_factory=list)
+
+
+class RagContextBundle(BaseModel):
+    enabled: bool = False
+    items_used: list[RagContextItem] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    note: str = "RAG guidance is not contract evidence and must not be used to infer missing contractual provisions."
+    prompt_context: str = ""

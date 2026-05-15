@@ -2,9 +2,9 @@
 
 FastAPI backend for the SPA Commercial Evaluation Agent POC.
 
-Stage 4 extracts embedded PDF text with `pypdf`, optionally sends that text to OpenAI for structured commercial analysis, validates the result with Pydantic, and returns a `CommercialEvaluationResponse` with a taxonomy-driven provision register, clause coverage map, structured valuation input pack, and optionality register.
+Stage 5D extracts embedded PDF text with `pypdf`, stores the uploaded document through the document store, optionally retrieves local RAG guidance, sends the contract text to the configured LLM provider, validates the result with Pydantic, and returns a `CommercialEvaluationResponse` with a taxonomy-driven provision register, clause coverage map, structured valuation input pack, optionality register, document metadata, and optional RAG context summary.
 
-The backend uses a swappable LLM provider layer. `LLM_PROVIDER=mock` is the default and requires no external API. OpenAI and AWS Bedrock providers are available for local analysis configuration, but this project does not include AWS deployment, S3, RAG, auth, or database infrastructure.
+The backend uses a swappable LLM provider layer. `LLM_PROVIDER=mock` is the default and requires no external API. OpenAI and AWS Bedrock providers are available for local analysis configuration. The project includes local document storage, an S3 scaffold, and local keyword RAG, but it does not include AWS deployment, Bedrock Knowledge Bases, auth, or database infrastructure.
 
 ## Setup
 
@@ -25,6 +25,10 @@ OPENAI_MODEL=gpt-4.1
 AWS_REGION=ap-southeast-2
 BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 MAX_CONTRACT_CHARS=120000
+RAG_ENABLED=false
+RAG_TOP_K=5
+RAG_ANALYSIS_SECTIONS=pricing,valuation_input_pack,optionality,risk,recommendation
+RAG_ALLOWED_KNOWLEDGE_TYPES=internal_procedure,valuation_methodology,market_fundamentals,portfolio_strategy,good_analysis_example,corrected_analysis_example,reviewer_feedback,taxonomy_guidance,model_input_mapping_rule,negotiation_playbook,glossary,risk_policy
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
@@ -149,6 +153,25 @@ Bad analysis examples are retrievable for critique/comparison but return warning
 
 Stage 5C does not call external embedding APIs, OpenAI, Bedrock, Bedrock Knowledge Bases, AWS services, databases, or vector stores. It does not inject retrieval into `/analyze`.
 
+## Stage 5D RAG-Aware Analysis
+
+`/analyze` can now use local RAG guidance when explicitly enabled with `RAG_ENABLED=true`. RAG remains disabled by default, so the Stage 5A/5B/5C behavior is preserved unless opted in.
+
+RAG guidance is methodology context only. The uploaded contract text remains the only source of contractual truth. The prompt and response summary both state that RAG must not be used as evidence that a clause exists. RAG can improve classification, valuation input mapping, optionality framing, risk warnings, assumptions, and recommendation structure.
+
+Analysis RAG config:
+
+```bash
+RAG_ENABLED=false
+RAG_TOP_K=5
+RAG_ANALYSIS_SECTIONS=pricing,valuation_input_pack,optionality,risk,recommendation
+RAG_ALLOWED_KNOWLEDGE_TYPES=internal_procedure,valuation_methodology,market_fundamentals,portfolio_strategy,good_analysis_example,corrected_analysis_example,reviewer_feedback,taxonomy_guidance,model_input_mapping_rule,negotiation_playbook,glossary,risk_policy
+```
+
+When enabled, the pipeline builds focused local keyword queries, retrieves approved chunks from `.local_rag`, deduplicates them, filters to allowed knowledge types, passes a compact guidance block to the selected LLM provider, and attaches a non-sensitive `rag_context_summary` to the response. The summary includes citation-style metadata and excerpts, not the full prompt.
+
+Bad analysis examples are excluded from analysis context by default. Draft, deprecated, superseded, or unapproved materials are excluded or warning-marked according to metadata and config. This stage does not add embeddings, Bedrock Knowledge Bases, external retrieval, auth, a database, or production access controls.
+
 ## Stage 2 Taxonomy
 
 The backend includes a deterministic SPA commercial taxonomy in `app/taxonomy.py`. It covers:
@@ -254,4 +277,4 @@ No test requires a real OpenAI API call.
 - Market and portfolio conclusions require manual assumptions unless those assumptions are supplied in the uploaded document.
 - Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
 - Local document storage is for development only and must be replaced with a production retention, encryption, and access-control design before real sensitive use.
-- No database, auth, deployment, Docker, report export, RAG injection into `/analyze`, or multi-agent orchestration is included.
+- No database, auth, deployment, Docker, report export, vector embeddings, Bedrock Knowledge Bases, production RAG service, or multi-agent orchestration is included.

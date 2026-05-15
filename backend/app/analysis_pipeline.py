@@ -1,6 +1,8 @@
 from app.config import get_settings
 from app.llm_providers.base import LLMProviderConfigurationError, LLMProviderError
 from app.llm_providers.factory import create_llm_provider
+from app.rag.context_builder import build_analysis_rag_context
+from app.rag.schemas import RagContextBundle
 from app.schemas import (
     ClauseCoverageItem,
     CommercialEvaluationResponse,
@@ -40,17 +42,40 @@ def run_analysis_pipeline(contract_text: str) -> CommercialEvaluationResponse:
     cleaned_text = _normalize_contract_text(contract_text)
     settings = get_settings()
     bounded_text = cleaned_text[: settings.max_contract_chars]
+    rag_context_bundle = _build_optional_rag_context(bounded_text, settings)
+    rag_prompt_context = rag_context_bundle.prompt_context if rag_context_bundle and rag_context_bundle.items_used else None
 
     try:
         provider = create_llm_provider(settings)
-        response = provider.analyze_contract(bounded_text)
-        return validate_commercial_evaluation(response)
+        response = provider.analyze_contract(bounded_text, rag_context=rag_prompt_context)
+        return _validate_and_attach_rag_summary(response, rag_context_bundle)
     except LLMProviderConfigurationError as exc:
         if settings.llm_provider.strip().lower() == "openai" and not settings.openai_api_key:
-            return validate_commercial_evaluation(_build_mock_response(bounded_text))
+            return _validate_and_attach_rag_summary(_build_mock_response(bounded_text), rag_context_bundle)
         raise AnalysisPipelineError("LLM provider is not configured correctly.") from exc
     except LLMProviderError as exc:
         raise AnalysisPipelineError("LLM provider analysis failed or returned an invalid schema.") from exc
+
+
+def _build_optional_rag_context(contract_text: str, settings) -> RagContextBundle | None:
+    if not settings.rag_enabled:
+        return None
+    return build_analysis_rag_context(
+        contract_text,
+        analysis_sections=settings.rag_sections,
+        top_k=settings.rag_top_k,
+    )
+
+
+def _validate_and_attach_rag_summary(
+    response: CommercialEvaluationResponse,
+    rag_context_bundle: RagContextBundle | None,
+) -> CommercialEvaluationResponse:
+    validated = validate_commercial_evaluation(response)
+    if rag_context_bundle is not None:
+        # prompt_context can contain retrieved chunk text; the API response only exposes non-sensitive citations/summary.
+        validated.rag_context_summary = rag_context_bundle.model_copy(update={"prompt_context": ""})
+    return validated
 
 
 def _normalize_contract_text(contract_text: str) -> str:

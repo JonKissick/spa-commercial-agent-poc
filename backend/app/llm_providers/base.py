@@ -16,5 +16,5 @@ class LLMProviderSchemaError(LLMProviderError):
 
 
 class LLMProvider(Protocol):
-    def analyze_contract(self, contract_text: str) -> CommercialEvaluationResponse:
+    def analyze_contract(self, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         ...

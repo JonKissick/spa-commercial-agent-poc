@@ -16,15 +16,15 @@ class OpenAIProvider:
         self.api_key = api_key
         self.model = model
 
-    def analyze_contract(self, contract_text: str) -> CommercialEvaluationResponse:
+    def analyze_contract(self, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         if not self.api_key:
             raise LLMProviderConfigurationError("OPENAI_API_KEY is not configured.")
 
         client = OpenAI(api_key=self.api_key)
         try:
             if hasattr(client.responses, "parse"):
-                return self._analyze_with_responses_parse(client, contract_text)
-            return self._analyze_with_chat_json_schema(client, contract_text)
+                return self._analyze_with_responses_parse(client, contract_text, rag_context)
+            return self._analyze_with_chat_json_schema(client, contract_text, rag_context)
         except OpenAIError as exc:
             raise LLMProviderError("OpenAI analysis request failed.") from exc
         except ValidationError as exc:
@@ -32,12 +32,12 @@ class OpenAIProvider:
         except json.JSONDecodeError as exc:
             raise LLMProviderSchemaError("OpenAI response was not valid JSON.") from exc
 
-    def _analyze_with_responses_parse(self, client: OpenAI, contract_text: str) -> CommercialEvaluationResponse:
+    def _analyze_with_responses_parse(self, client: OpenAI, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         response = client.responses.parse(
             model=self.model,
             input=[
                 {"role": "system", "content": STAGE_1_SYSTEM_PROMPT},
-                {"role": "user", "content": build_stage_1_user_prompt(contract_text)},
+                {"role": "user", "content": build_stage_1_user_prompt(contract_text, rag_context=rag_context)},
             ],
             text_format=CommercialEvaluationResponse,
         )
@@ -46,13 +46,13 @@ class OpenAIProvider:
             raise LLMProviderSchemaError("OpenAI response did not include a parsed structured output.")
         return self._validate_payload(parsed)
 
-    def _analyze_with_chat_json_schema(self, client: OpenAI, contract_text: str) -> CommercialEvaluationResponse:
+    def _analyze_with_chat_json_schema(self, client: OpenAI, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         schema = CommercialEvaluationResponse.model_json_schema()
         response = client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": STAGE_1_SYSTEM_PROMPT},
-                {"role": "user", "content": build_stage_1_user_prompt(contract_text)},
+                {"role": "user", "content": build_stage_1_user_prompt(contract_text, rag_context=rag_context)},
             ],
             response_format={
                 "type": "json_schema",

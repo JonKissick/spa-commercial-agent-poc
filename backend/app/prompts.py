@@ -127,11 +127,26 @@ Output requirements:
 STAGE_1_SYSTEM_PROMPT = STAGE_2_SYSTEM_PROMPT
 
 
-def build_stage_1_user_prompt(contract_text: str) -> str:
+def build_stage_1_user_prompt(contract_text: str, rag_context: str | None = None) -> str:
+    rag_section = ""
+    if rag_context:
+        rag_section = f"""
+
+RAG GUIDANCE RULES:
+- Uploaded contract text is the only source of contractual provisions.
+- RAG guidance is internal methodology/context only.
+- Do not cite RAG guidance as proof that a contract clause exists.
+- Use RAG to improve classification, valuation input mapping, optionality framing, risk warnings, and recommendation structure.
+- If RAG guidance conflicts with contract text, contract text controls for extraction.
+- If RAG guidance says a term is important but the contract does not contain it, mark it as not_identified or assumption required.
+- Preserve evidence statuses.
+
+{rag_context}
+"""
     return f"""
 Analyze the following extracted contract text and return a structured
 CommercialEvaluationResponse. The source text may be incomplete if the PDF has
-formatting or extraction limitations.
+formatting or extraction limitations.{rag_section}
 
 CONTRACT TEXT:
 {contract_text}

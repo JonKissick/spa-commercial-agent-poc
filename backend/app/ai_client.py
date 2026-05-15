@@ -24,9 +24,9 @@ class AIClient:
     def __init__(self, api_key: str | None, model: str) -> None:
         self.provider = OpenAIProvider(api_key=api_key, model=model)
 
-    def analyze_contract_text(self, contract_text: str) -> CommercialEvaluationResponse:
+    def analyze_contract_text(self, contract_text: str, rag_context: str | None = None) -> CommercialEvaluationResponse:
         try:
-            return self.provider.analyze_contract(contract_text)
+            return self.provider.analyze_contract(contract_text, rag_context=rag_context)
         except LLMProviderConfigurationError as exc:
             raise MissingAPIKeyError(str(exc)) from exc
         except LLMProviderSchemaError as exc:

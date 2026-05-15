@@ -105,7 +105,7 @@ def rag_ingest_text(request: IngestTextRequest) -> IngestionResult:
 
 @app.post("/rag/retrieve", response_model=list[RetrievalResult])
 def rag_retrieve(request: RetrieveRequest) -> list[RetrievalResult]:
-    # Local POC endpoint only. Retrieval is not injected into /analyze in Stage 5C.
+    # Local POC endpoint only. Stage 5D may use retrieval in /analyze only when RAG_ENABLED=true.
     return retrieve_knowledge(query=request.query, filters=request.filters, top_k=request.top_k)
 
 

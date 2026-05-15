@@ -29,8 +29,20 @@ class Settings(BaseSettings):
     rag_require_approved_for_rag: bool = True
     bedrock_knowledge_base_id: str | None = None
     bedrock_knowledge_base_region: str | None = None
+    rag_enabled: bool = False
+    rag_top_k: int = 5
+    rag_analysis_sections: str = "pricing,valuation_input_pack,optionality,risk,recommendation"
+    rag_allowed_knowledge_types: str = "internal_procedure,valuation_methodology,market_fundamentals,portfolio_strategy,good_analysis_example,corrected_analysis_example,reviewer_feedback,taxonomy_guidance,model_input_mapping_rule,negotiation_playbook,glossary,risk_policy"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @property
+    def rag_sections(self) -> list[str]:
+        return [section.strip() for section in self.rag_analysis_sections.split(",") if section.strip()]
+
+    @property
+    def rag_allowed_types(self) -> list[str]:
+        return [item.strip() for item in self.rag_allowed_knowledge_types.split(",") if item.strip()]
 
     @property
     def cors_origins(self) -> list[str]:
