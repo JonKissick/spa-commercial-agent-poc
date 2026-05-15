@@ -6,6 +6,10 @@ from app.config import get_settings
 from app.document_store.base import DocumentStoreError, StoredDocument
 from app.document_store.factory import create_document_store
 from app.pdf_extraction import extract_text_from_pdf
+from app.rag.factory import create_rag_index
+from app.rag.ingestion import ingest_knowledge_text
+from app.rag.retrieval import retrieve_knowledge
+from app.rag.schemas import IngestTextRequest, IngestionResult, KnowledgeDocumentMetadata, RetrievalResult, RetrieveRequest
 from app.schemas import CommercialEvaluationResponse, DocumentMetadata
 from app.validation import CommercialEvaluationValidationError
 
@@ -84,3 +88,28 @@ def _to_document_metadata(stored_document: StoredDocument) -> DocumentMetadata:
         retention_policy=stored_document.retention_policy,
         storage_uri=storage_uri,
     )
+
+
+@app.post("/rag/ingest-text", response_model=IngestionResult)
+def rag_ingest_text(request: IngestTextRequest) -> IngestionResult:
+    # Local POC endpoint only. Do not expose without auth in production.
+    try:
+        return ingest_knowledge_text(
+            text=request.text,
+            metadata=request.metadata,
+            allow_unapproved=request.allow_unapproved,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/rag/retrieve", response_model=list[RetrievalResult])
+def rag_retrieve(request: RetrieveRequest) -> list[RetrievalResult]:
+    # Local POC endpoint only. Retrieval is not injected into /analyze in Stage 5C.
+    return retrieve_knowledge(query=request.query, filters=request.filters, top_k=request.top_k)
+
+
+@app.get("/rag/knowledge", response_model=list[KnowledgeDocumentMetadata])
+def rag_knowledge() -> list[KnowledgeDocumentMetadata]:
+    # Metadata-only listing. Does not return chunk text.
+    return create_rag_index(get_settings()).list_knowledge_documents()

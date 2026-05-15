@@ -11,3 +11,4 @@ out/
 dist/
 coverage/
 backend/.local_documents/
+backend/.local_rag/

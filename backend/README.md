@@ -90,6 +90,65 @@ Safety notes:
 - API keys, prompts, storage paths, and stack traces are not exposed in error responses.
 - Local storage is for development only; S3/KMS is scaffolded for a later secure AWS stage.
 
+
+## Stage 5C Local RAG Ingestion
+
+The backend now includes a local, deterministic RAG ingestion foundation under `app/rag/`. This is not connected to `/analyze` yet. It prepares the project for future production RAG, such as Amazon Bedrock Knowledge Bases, while staying local and testable.
+
+Knowledge libraries include contract references, internal procedures, valuation methodology, market fundamentals, portfolio strategy, good/bad/corrected analysis examples, reviewer feedback, taxonomy guidance, model input mapping rules, negotiation playbooks, glossary terms, risk policy, and other approved references.
+
+Each ingested item carries metadata such as title, knowledge type, source filename/document id, version, effective date, owner, confidentiality, approval status, jurisdiction, commodity, contract type, deal type, analysis section, quality label, tags, approval flag, warnings, and created timestamp. Raw source text is not stored in metadata; chunk text is stored only in the local RAG index.
+
+Local config:
+
+```bash
+RAG_PROVIDER=local
+LOCAL_RAG_DIR=.local_rag
+RAG_DEFAULT_CHUNK_SIZE=1200
+RAG_DEFAULT_CHUNK_OVERLAP=150
+RAG_REQUIRE_APPROVED_FOR_RAG=true
+BEDROCK_KNOWLEDGE_BASE_ID=
+BEDROCK_KNOWLEDGE_BASE_REGION=
+```
+
+Local dev endpoints:
+
+- `POST /rag/ingest-text`: accepts text and metadata, chunks it, and writes to the local JSONL index.
+- `POST /rag/retrieve`: deterministic keyword retrieval with metadata filters.
+- `GET /rag/knowledge`: metadata-only listing of ingested knowledge documents.
+
+Example ingest payload:
+
+```json
+{
+  "text": "Pricing formula guidance should map clauses to model input candidates only.",
+  "metadata": {
+    "title": "Pricing Input Mapping Rule",
+    "knowledge_type": "model_input_mapping_rule",
+    "approval_status": "approved",
+    "approved_for_rag": true,
+    "commodity": "lng",
+    "contract_type": "spa",
+    "analysis_section": "valuation_input_pack",
+    "tags": ["pricing", "model-inputs"]
+  }
+}
+```
+
+Example retrieval payload:
+
+```json
+{
+  "query": "pricing formula model input",
+  "filters": {"knowledge_type": "model_input_mapping_rule", "commodity": "lng"},
+  "top_k": 5
+}
+```
+
+Bad analysis examples are retrievable for critique/comparison but return warnings. Draft, deprecated, superseded, or unapproved material also returns warnings and may be rejected at ingestion when `RAG_REQUIRE_APPROVED_FOR_RAG=true`.
+
+Stage 5C does not call external embedding APIs, OpenAI, Bedrock, Bedrock Knowledge Bases, AWS services, databases, or vector stores. It does not inject retrieval into `/analyze`.
+
 ## Stage 2 Taxonomy
 
 The backend includes a deterministic SPA commercial taxonomy in `app/taxonomy.py`. It covers:
@@ -195,4 +254,4 @@ No test requires a real OpenAI API call.
 - Market and portfolio conclusions require manual assumptions unless those assumptions are supplied in the uploaded document.
 - Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
 - Local document storage is for development only and must be replaced with a production retention, encryption, and access-control design before real sensitive use.
-- No database, auth, deployment, Docker, report export, or multi-agent orchestration is included.
+- No database, auth, deployment, Docker, report export, RAG injection into `/analyze`, or multi-agent orchestration is included.

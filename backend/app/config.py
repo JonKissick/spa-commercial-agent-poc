@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     s3_prefix: str = "spa-commercial-agent-poc/"
     kms_key_id: str | None = None
     document_retention_policy: str = "local_dev_delete_manually"
+    rag_provider: str = "local"
+    local_rag_dir: str = ".local_rag"
+    rag_default_chunk_size: int = 1200
+    rag_default_chunk_overlap: int = 150
+    rag_require_approved_for_rag: bool = True
+    bedrock_knowledge_base_id: str | None = None
+    bedrock_knowledge_base_region: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
