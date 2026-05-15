@@ -135,7 +135,7 @@ function RecommendationCard({ recommendation }: { recommendation?: DealRecommend
   return <section className="card"><div className="card-header compact"><h3>Recommendation Memo</h3><StatusBadge label={recommendation.recommendation} tone={recommendation.recommendation === "reject" ? "danger" : recommendation.recommendation === "insufficient_evidence" ? "warning" : "good"} /></div><p>{recommendation.memo}</p><h4>Conditions</h4><ul>{recommendation.key_conditions.map((item) => <li key={item}>{item}</li>)}</ul><h4>Risks</h4><ul>{recommendation.key_risks.map((item) => <li key={item}>{item}</li>)}</ul></section>;
 }
 
-export default function AnalysisResults({ result }: { result: CommercialEvaluationResponse }) {
+export default function AnalysisResults({ result, onPrefillNpv }: { result: CommercialEvaluationResponse; onPrefillNpv?: () => void }) {
   const market = result.market_context_assessment ?? result.market_context;
   const portfolio = result.portfolio_fit_assessment ?? result.portfolio_fit;
   const recommendation = result.deal_recommendation ?? result.recommendation;
@@ -148,7 +148,7 @@ export default function AnalysisResults({ result }: { result: CommercialEvaluati
       <ClauseCoverageTable items={result.clause_coverage} />
       <ProvisionTable items={result.provision_register} />
       <ValuationPackCard pack={result.valuation_input_pack} />
-      <CommercialModelOutputs outputs={result.analysis_model_outputs} />
+      <CommercialModelOutputs outputs={result.analysis_model_outputs} onPrefillNpv={onPrefillNpv} />
       <OptionalityTable items={result.optionality_register} />
       <div className="split-grid"><ContextCard title="Market Context" assessment={market} /><ContextCard title="Portfolio Fit" assessment={portfolio} /><RecommendationCard recommendation={recommendation} /></div>
       {result.limitations?.length ? <section className="card wide"><h3>Limitations</h3><ul>{result.limitations.map((item) => <li key={item}>{item}</li>)}</ul></section> : null}

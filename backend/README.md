@@ -315,3 +315,13 @@ No test requires a real OpenAI API call.
 - Clause coverage is evidence-constrained and depends on the quality of extracted PDF text.
 - Local document storage is for development only and must be replaced with a production retention, encryption, and access-control design before real sensitive use.
 - No database, auth, deployment, Docker, report export, vector embeddings, Bedrock Knowledge Bases, production RAG service, or multi-agent orchestration is included.
+
+## Stage 7D Sensitivity Tables and Break-even Analysis
+
+The manual NPV calculator now returns deterministic sensitivity tables and structured break-even results from `POST /calculators/npv`.
+
+Sensitivity tables are one-variable-at-a-time recalculations for market price, contract price, freight cost where applicable, and discount rate. They use the manual scenario inputs only. Discount-rate shifts are clamped at zero if a configured shift would make the rate negative.
+
+Break-even outputs include market price, contract price, freight cost where applicable, and annual volume where meaningful. They use the same flat annual unit margin model as the calculator and safely warning-mark zero-volume, zero-fixed-cost, and non-positive-margin cases.
+
+Limitations: no AI, RAG, live market data, stochastic simulation, probability weighting, correlation modelling, quantitative optionality value, or portfolio optimization is included.

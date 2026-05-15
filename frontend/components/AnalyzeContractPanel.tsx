@@ -13,9 +13,10 @@ interface AnalyzeContractPanelProps {
   knowledgeLoading: boolean;
   onFileChange: (file: File | null) => void;
   onAnalyze: () => void;
+  onPrefillNpv: () => void;
 }
 
-export default function AnalyzeContractPanel({ file, result, error, isLoading, knowledge, knowledgeError, knowledgeLoading, onFileChange, onAnalyze }: AnalyzeContractPanelProps) {
+export default function AnalyzeContractPanel({ file, result, error, isLoading, knowledge, knowledgeError, knowledgeLoading, onFileChange, onAnalyze, onPrefillNpv }: AnalyzeContractPanelProps) {
   return (
     <div className="panel-stack">
       <section className="card wide">
@@ -32,7 +33,7 @@ export default function AnalyzeContractPanel({ file, result, error, isLoading, k
       </section>
       <div className="split-grid"><RagSummaryPanel knowledge={knowledge} isLoading={knowledgeLoading} error={knowledgeError} /><MissingKnowledgeSuggestions knowledge={knowledge} /></div>
       {isLoading && <div className="status-panel">Analyzing uploaded PDF...</div>}
-      {result && <AnalysisResults result={result} />}
+      {result && <AnalysisResults result={result} onPrefillNpv={onPrefillNpv} />}
     </div>
   );
 }

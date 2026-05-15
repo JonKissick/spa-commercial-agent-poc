@@ -399,6 +399,7 @@ export interface NpvCalculationRequest {
   unit: string;
   scenarios: ScenarioAssumptions[];
   include_midyear_discounting: boolean;
+  sensitivity?: SensitivityInput | null;
 }
 
 export interface ScenarioNpvResult {
@@ -427,4 +428,39 @@ export interface NpvCalculationResponse {
   break_even_candidates: string[];
   warnings: string[];
   limitations: string[];
+  sensitivity_tables?: SensitivityTable[];
+  break_even_results?: BreakEvenResult[];
+}
+
+export interface SensitivityInput {
+  enabled: boolean;
+  market_price_shifts: number[];
+  contract_price_shifts: number[];
+  freight_cost_shifts: number[];
+  discount_rate_shifts: number[];
+}
+
+export interface SensitivityPoint {
+  variable: string;
+  shift: number;
+  scenario_name: NpvScenarioName;
+  resulting_npv: number;
+  resulting_annual_unit_margin: number;
+  note?: string | null;
+}
+
+export interface SensitivityTable {
+  scenario_name: NpvScenarioName;
+  variable: string;
+  points: SensitivityPoint[];
+}
+
+export interface BreakEvenResult {
+  scenario_name: NpvScenarioName;
+  break_even_market_price?: number | null;
+  break_even_contract_price?: number | null;
+  break_even_freight_cost?: number | null;
+  break_even_annual_volume?: number | null;
+  notes: string[];
+  warnings: string[];
 }

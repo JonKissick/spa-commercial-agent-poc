@@ -23,6 +23,7 @@ export default function Home() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [systemError, setSystemError] = useState<string | null>(null);
+  const [npvPrefillSignal, setNpvPrefillSignal] = useState(0);
 
   const refreshKnowledge = useCallback(async () => {
     setKnowledgeLoading(true);
@@ -71,6 +72,11 @@ export default function Home() {
     }
   }
 
+  function handlePrefillNpv() {
+    setNpvPrefillSignal((current) => current + 1);
+    setActiveTab("npv");
+  }
+
   return (
     <main className="page-shell">
       <section className="intro workbench-hero">
@@ -95,6 +101,7 @@ export default function Home() {
           knowledgeLoading={knowledgeLoading}
           onFileChange={setFile}
           onAnalyze={handleAnalyze}
+          onPrefillNpv={handlePrefillNpv}
         />
       )}
 
@@ -106,7 +113,7 @@ export default function Home() {
 
       {activeTab === "retrieval" && <RagRetrievalPanel />}
 
-      {activeTab === "npv" && <NpvCalculatorPanel />}
+      {activeTab === "npv" && <NpvCalculatorPanel latestAnalysis={result} prefillSignal={npvPrefillSignal} />}
 
       {activeTab === "status" && (
         <SystemStatusPanel health={health} status={systemStatus} knowledge={knowledge} error={systemError} onRefresh={refreshSystem} />

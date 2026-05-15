@@ -30,6 +30,39 @@ class CalculationStatus(StrEnum):
     INVALID = "invalid"
 
 
+class SensitivityInput(BaseModel):
+    enabled: bool = True
+    market_price_shifts: list[float] = Field(default_factory=lambda: [-2, -1, 0, 1, 2])
+    contract_price_shifts: list[float] = Field(default_factory=lambda: [-2, -1, 0, 1, 2])
+    freight_cost_shifts: list[float] = Field(default_factory=lambda: [-0.5, 0, 0.5, 1.0])
+    discount_rate_shifts: list[float] = Field(default_factory=lambda: [-0.02, -0.01, 0, 0.01, 0.02])
+
+
+class SensitivityPoint(BaseModel):
+    variable: str
+    shift: float
+    scenario_name: ScenarioName
+    resulting_npv: float
+    resulting_annual_unit_margin: float
+    note: str | None = None
+
+
+class SensitivityTable(BaseModel):
+    scenario_name: ScenarioName
+    variable: str
+    points: list[SensitivityPoint] = Field(default_factory=list)
+
+
+class BreakEvenResult(BaseModel):
+    scenario_name: ScenarioName
+    break_even_market_price: float | None = None
+    break_even_contract_price: float | None = None
+    break_even_freight_cost: float | None = None
+    break_even_annual_volume: float | None = None
+    notes: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ScenarioAssumptions(BaseModel):
     scenario_name: ScenarioName
     annual_volume: float
@@ -62,6 +95,7 @@ class NpvCalculationRequest(BaseModel):
     unit: str = "MMBtu"
     scenarios: list[ScenarioAssumptions]
     include_midyear_discounting: bool = False
+    sensitivity: SensitivityInput | None = Field(default_factory=SensitivityInput)
 
     @field_validator("discount_rate")
     @classmethod
@@ -111,3 +145,5 @@ class NpvCalculationResponse(BaseModel):
     break_even_candidates: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    sensitivity_tables: list[SensitivityTable] = Field(default_factory=list)
+    break_even_results: list[BreakEvenResult] = Field(default_factory=list)

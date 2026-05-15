@@ -4,6 +4,7 @@ import StatusBadge from "./StatusBadge";
 
 interface CommercialModelOutputsProps {
   outputs?: AnalysisModelOutputs | null;
+  onPrefillNpv?: () => void;
 }
 
 function ListBlock({ title, items }: { title: string; items?: string[] }) {
@@ -16,7 +17,7 @@ function ListBlock({ title, items }: { title: string; items?: string[] }) {
   );
 }
 
-export default function CommercialModelOutputs({ outputs }: CommercialModelOutputsProps) {
+export default function CommercialModelOutputs({ outputs, onPrefillNpv }: CommercialModelOutputsProps) {
   if (!outputs) return null;
   const deal = outputs.deal_structure;
   const readiness = outputs.npv_readiness;
@@ -32,7 +33,10 @@ export default function CommercialModelOutputs({ outputs }: CommercialModelOutpu
           <h3>Commercial Model Outputs</h3>
           <p className="quiet">Model route and missing-input assessment only. No NPV has been calculated.</p>
         </div>
-        <StatusBadge label={readiness.readiness} tone={readiness.can_calculate_npv_now ? "good" : "warning"} />
+        <div className="header-actions">
+          {onPrefillNpv && <button className="secondary-button" onClick={onPrefillNpv} type="button">Use in NPV Calculator</button>}
+          <StatusBadge label={readiness.readiness} tone={readiness.can_calculate_npv_now ? "good" : "warning"} />
+        </div>
       </div>
 
       <div className="commercial-model-grid">

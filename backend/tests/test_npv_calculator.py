@@ -126,3 +126,94 @@ def test_endpoint_post_calculators_npv_works() -> None:
     assert body["calculation_status"] == "calculated"
     assert body["scenario_results"][0]["npv"] == 329.75
     assert "No LLM or RAG system is used to calculate NPV." in body["limitations"]
+
+
+def test_sensitivity_defaults_are_applied_when_omitted() -> None:
+    response = calculate_npv(_request())
+
+    assert response.sensitivity_tables
+    assert any(table.variable == "market_price" for table in response.sensitivity_tables)
+    assert response.break_even_results
+
+
+def test_buyer_fob_market_price_sensitivity_works() -> None:
+    response = calculate_npv(_request())
+    table = next(table for table in response.sensitivity_tables if table.variable == "market_price")
+    by_shift = {point.shift: point for point in table.points}
+
+    assert by_shift[1].resulting_npv > by_shift[0].resulting_npv
+    assert by_shift[-1].resulting_npv < by_shift[0].resulting_npv
+
+
+def test_buyer_fob_contract_price_sensitivity_direction_is_correct() -> None:
+    response = calculate_npv(_request())
+    table = next(table for table in response.sensitivity_tables if table.variable == "contract_price")
+    by_shift = {point.shift: point for point in table.points}
+
+    assert by_shift[1].resulting_npv < by_shift[0].resulting_npv
+    assert by_shift[-1].resulting_npv > by_shift[0].resulting_npv
+
+
+def test_buyer_fob_freight_sensitivity_works() -> None:
+    response = calculate_npv(_request())
+    table = next(table for table in response.sensitivity_tables if table.variable == "freight_cost")
+    by_shift = {point.shift: point for point in table.points}
+
+    assert by_shift[0.5].resulting_npv < by_shift[0].resulting_npv
+
+
+def test_seller_fob_market_price_sensitivity_is_warning_marked() -> None:
+    response = calculate_npv(_request(role="seller", basis="fob"))
+
+    warnings = " ".join(response.warnings).lower()
+    assert "market price is not directly used" in warnings
+    table = next(table for table in response.sensitivity_tables if table.variable == "market_price")
+    assert table.points[0].note
+
+
+def test_discount_rate_sensitivity_clamps_negative_rates() -> None:
+    request = _request()
+    request.discount_rate = 0.01
+    request.sensitivity.discount_rate_shifts = [-0.02, 0]
+
+    response = calculate_npv(request)
+
+    warnings = " ".join(response.warnings).lower()
+    assert "clamped to 0" in warnings
+    table = next(table for table in response.sensitivity_tables if table.variable == "discount_rate")
+    assert table.points[0].note
+
+
+def test_buyer_fob_break_even_outputs_are_correct() -> None:
+    response = calculate_npv(_request(role="buyer", basis="fob"))
+    result = response.break_even_results[0]
+
+    assert result.break_even_market_price == 10.1
+    assert result.break_even_contract_price == 9.9
+    assert result.break_even_freight_cost == 2.9
+
+
+def test_seller_des_break_even_contract_price_is_correct() -> None:
+    response = calculate_npv(_request(role="seller", basis="des"))
+    result = response.break_even_results[0]
+
+    assert result.break_even_contract_price == 7.1
+
+
+def test_zero_annual_volume_is_handled_safely() -> None:
+    response = calculate_npv(_request(annual_volume=0))
+
+    assert response.break_even_results[0].break_even_annual_volume is None
+    assert "annual volume is zero" in " ".join(response.warnings).lower()
+
+
+def test_endpoint_returns_sensitivity_and_break_even_results() -> None:
+    client = TestClient(app)
+    payload = _request().model_dump(mode="json")
+
+    response = client.post("/calculators/npv", json=payload)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["sensitivity_tables"]
+    assert body["break_even_results"]
