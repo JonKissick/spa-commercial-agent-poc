@@ -1,5 +1,6 @@
-from app.ai_client import AIClient, MissingAPIKeyError
 from app.config import get_settings
+from app.llm_providers.base import LLMProviderConfigurationError, LLMProviderError
+from app.llm_providers.factory import create_llm_provider
 from app.schemas import (
     ClauseCoverageItem,
     CommercialEvaluationResponse,
@@ -11,10 +12,12 @@ from app.schemas import (
     EvidenceStatus,
     MarketContextAssessment,
     OptionalityRegisterItem,
+    OptionType,
     PortfolioFitAssessment,
     ProvisionCategory,
     ProvisionRegisterItem,
     RecommendationValue,
+    SuggestedValuationMethod,
     ValuationImpact,
     ValuationInputItem,
     ValuationInputPack,
@@ -38,19 +41,16 @@ def run_analysis_pipeline(contract_text: str) -> CommercialEvaluationResponse:
     settings = get_settings()
     bounded_text = cleaned_text[: settings.max_contract_chars]
 
-    if settings.openai_api_key:
-        try:
-            response = AIClient(
-                api_key=settings.openai_api_key,
-                model=settings.openai_model,
-            ).analyze_contract_text(bounded_text)
-            return validate_commercial_evaluation(response)
-        except MissingAPIKeyError:
-            pass
-        except Exception as exc:
-            raise AnalysisPipelineError("OpenAI structured analysis failed or returned an invalid schema.") from exc
-
-    return validate_commercial_evaluation(_build_mock_response(bounded_text))
+    try:
+        provider = create_llm_provider(settings)
+        response = provider.analyze_contract(bounded_text)
+        return validate_commercial_evaluation(response)
+    except LLMProviderConfigurationError as exc:
+        if settings.llm_provider.strip().lower() == "openai" and not settings.openai_api_key:
+            return validate_commercial_evaluation(_build_mock_response(bounded_text))
+        raise AnalysisPipelineError("LLM provider is not configured correctly.") from exc
+    except LLMProviderError as exc:
+        raise AnalysisPipelineError("LLM provider analysis failed or returned an invalid schema.") from exc
 
 
 def _normalize_contract_text(contract_text: str) -> str:
@@ -66,7 +66,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     clause_coverage = _build_mock_clause_coverage()
 
     market_context = MarketContextAssessment(
-        summary="Market context is not evaluated in Stage 3 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
+        summary="Market context is not evaluated in Stage 4 without supplied market data. External price curves, liquidity, and spread assumptions are required.",
         required_market_assumptions=[
             "Relevant commodity forward curve.",
             "Regional basis differentials.",
@@ -76,7 +76,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
         confidence=Confidence.LOW,
     )
     portfolio_fit = PortfolioFitAssessment(
-        summary="Portfolio fit is not evaluated in Stage 3 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
+        summary="Portfolio fit is not evaluated in Stage 4 without supplied portfolio data. Existing book exposure, concentration, and operational capacity must be supplied separately.",
         required_portfolio_assumptions=[
             "Current portfolio exposure by tenor and location.",
             "Operational capacity and delivery constraints.",
@@ -87,7 +87,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
     )
     recommendation = DealRecommendation(
         recommendation=RecommendationValue.INSUFFICIENT_EVIDENCE,
-        memo="Stage 3 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
+        memo="Stage 4 fallback returns a placeholder recommendation only. Proceeding requires validated clause extraction, commercial validation, market assumptions, and portfolio review.",
         key_conditions=[
             "Complete validated clause extraction.",
             "Confirm valuation model inputs.",
@@ -149,6 +149,20 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
                 evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
                 confidence=Confidence.LOW,
                 warnings=["Volume flexibility evidence is weak or indirect in mock fallback mode."],
+                analyst_validation_needed=True,
+            ),
+            ProvisionRegisterItem(
+                id="PR-004",
+                title="Destination flexibility",
+                category=ProvisionCategory.DESTINATION_FLEXIBILITY,
+                clause_reference=None,
+                extracted_text=None,
+                commercial_meaning="Potential destination flexibility is included as a weak illustrative optionality item in fallback mode.",
+                valuation_impact=ValuationImpact.OPTIONALITY,
+                model_input="Confirm whether the SPA permits diversion, destination nomination, resale, or alternate discharge ports.",
+                evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
+                confidence=Confidence.LOW,
+                warnings=["Destination flexibility is weak/unclear in mock fallback mode and must be validated against the contract."],
                 analyst_validation_needed=True,
             ),
             ProvisionRegisterItem(
@@ -258,7 +272,7 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
                 "Operational capacity, concentration limits, and counterparty exposure limits.",
             ],
             valuation_warnings=[
-                "Stage 3 prepares valuation input candidates only; no NPV, IRR, fair value, option value, expected margin, or trade P&L has been calculated.",
+                "Stage 4 prepares valuation input candidates only; no NPV, IRR, fair value, option value, expected margin, or trade P&L has been calculated.",
                 "Volume clause coverage is not present, so quantity inputs require analyst validation.",
             ],
             evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
@@ -267,27 +281,78 @@ def _build_mock_response(contract_text: str) -> CommercialEvaluationResponse:
             OptionalityRegisterItem(
                 id="OP-001",
                 option_name="Destination flexibility",
-                commercial_description="Potential value from redirecting deliveries across markets or assets.",
+                option_type=OptionType.DESTINATION_FLEX,
+                source_category=ProvisionCategory.DESTINATION_FLEXIBILITY,
+                source_provision_ids=["PR-004"],
+                source_clause_reference=None,
+                extracted_right=None,
+                commercial_description="Potential right to redirect or nominate destination is weak/unclear in fallback mode.",
+                economic_value_logic="If contractually valid, destination flexibility could allow spread capture across markets or assets; no value is calculated.",
+                suggested_valuation_method=SuggestedValuationMethod.SPREAD_OPTION,
+                required_market_data=["Destination market spreads, freight, liquidity, and forward curves."],
+                required_operational_data=["Vessel, port, scheduling, diversion, and deliverability constraints."],
+                required_portfolio_data=["Portfolio demand, supply commitments, and capacity by destination."],
+                required_analyst_assumptions=["Confirm diversion, resale, and destination nomination rights in the SPA."],
+                key_value_drivers=["Market spread", "Diversion notice period", "Operational feasibility"],
+                key_risks_or_constraints=["Destination right is weak/unclear in mock fallback mode."],
                 valuation_impact=ValuationImpact.OPTIONALITY,
-                evidence_status=EvidenceStatus.MARKET_ASSUMPTION_REQUIRED,
+                evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
                 confidence=Confidence.LOW,
-                assumption_required="Assess destination rights, diversion constraints, and market spread scenarios.",
+                warnings=["Weak evidence only; do not value destination flexibility without contract validation."],
+                analyst_validation_needed=True,
             ),
             OptionalityRegisterItem(
                 id="OP-002",
                 option_name="Volume flexibility",
+                option_type=OptionType.VOLUME_FLEX,
+                source_category=ProvisionCategory.VOLUME_FLEXIBILITY,
+                source_provision_ids=["PR-002"],
+                source_clause_reference=None,
+                extracted_right=None,
                 commercial_description="Potential value from adjusting nominations within contractual bands.",
+                economic_value_logic="If confirmed, volume flexibility may support swing-style scenario analysis; no quantitative result is calculated.",
+                suggested_valuation_method=SuggestedValuationMethod.SWING_OPTION,
+                required_market_data=["Price curves, volatility, liquidity, and downside/upside scenarios."],
+                required_operational_data=["Nomination deadlines, min/max quantities, deliverability, and storage/logistics constraints."],
+                required_portfolio_data=["Portfolio imbalance, demand flexibility, and concentration constraints."],
+                required_analyst_assumptions=["Quantify flexibility bands and operational constraints."],
+                key_value_drivers=["Quantity band", "Exercise frequency", "Market volatility", "Operational constraints"],
+                key_risks_or_constraints=["Source provision is weak/unclear in mock fallback mode."],
                 valuation_impact=ValuationImpact.OPTIONALITY,
                 evidence_status=EvidenceStatus.ANALYST_ASSUMPTION_REQUIRED,
                 confidence=Confidence.LOW,
-                assumption_required="Quantify flexibility bands and operational constraints.",
+                warnings=["Weak evidence only; do not value volume flexibility without contract validation."],
+                analyst_validation_needed=True,
+            ),
+            OptionalityRegisterItem(
+                id="OP-003",
+                option_name="Unconfirmed make-up or carry-forward rights",
+                option_type=OptionType.MAKE_UP,
+                source_category=ProvisionCategory.MAKE_UP,
+                source_provision_ids=[],
+                source_clause_reference=None,
+                extracted_right=None,
+                commercial_description="Make-up or carry-forward optionality was not identified in the extracted text.",
+                economic_value_logic="Could matter if present, but there is insufficient evidence to treat it as a contractual option.",
+                suggested_valuation_method=SuggestedValuationMethod.INSUFFICIENT_EVIDENCE,
+                required_market_data=["Market scenarios would be required only if the right is confirmed."],
+                required_operational_data=["Future delivery feasibility would be required only if the right is confirmed."],
+                required_portfolio_data=["Portfolio need for deferred quantities would be required only if the right is confirmed."],
+                required_analyst_assumptions=["Confirm whether make-up or carry-forward rights exist."],
+                key_value_drivers=[],
+                key_risks_or_constraints=["No supporting clause was identified in fallback mode."],
+                valuation_impact=ValuationImpact.UNCLEAR,
+                evidence_status=EvidenceStatus.INSUFFICIENT_EVIDENCE,
+                confidence=Confidence.LOW,
+                warnings=["Insufficient evidence; this optionality item is a placeholder for analyst validation, not a claimed right."],
+                analyst_validation_needed=True,
             ),
         ],
         market_context_assessment=market_context,
         portfolio_fit_assessment=portfolio_fit,
         deal_recommendation=recommendation,
         limitations=[
-            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 3 analysis.",
+            "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 4 analysis.",
             "Market and portfolio conclusions require manual assumptions unless those assumptions are explicitly supplied in the uploaded document.",
         ],
     )
@@ -307,6 +372,17 @@ def _build_mock_clause_coverage() -> list[ClauseCoverageItem]:
                     evidence_summary="Pricing language is present in the extracted text sample and is mapped to PR-001.",
                     provision_ids=["PR-001"],
                     warnings=[],
+                )
+            )
+        elif category == ProvisionCategory.DESTINATION_FLEXIBILITY:
+            coverage.append(
+                ClauseCoverageItem(
+                    category=category,
+                    label=label,
+                    status=CoverageStatus.WEAK_UNCLEAR,
+                    evidence_summary="Destination flexibility is included as a weak illustrative optionality extraction in mock fallback mode; analyst confirmation is required.",
+                    provision_ids=["PR-004"],
+                    warnings=["Evidence is partial or indirect in mock fallback mode."],
                 )
             )
         elif category == ProvisionCategory.VOLUME_FLEXIBILITY:

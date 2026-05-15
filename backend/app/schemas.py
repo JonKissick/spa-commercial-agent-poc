@@ -54,6 +54,33 @@ class EvidenceStatus(StrEnum):
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
 
 
+class OptionType(StrEnum):
+    DESTINATION_FLEX = "destination_flex"
+    VOLUME_FLEX = "volume_flex"
+    TIMING_FLEX = "timing_flex"
+    PRICE_REOPENER = "price_reopener"
+    MAKE_UP = "make_up"
+    CARRY_FORWARD = "carry_forward"
+    TAKE_OR_PAY_DOWNSIDE = "take_or_pay_downside"
+    TERMINATION = "termination"
+    CREDIT_SUPPORT = "credit_support"
+    OPERATIONAL_FLEX = "operational_flex"
+    OTHER = "other"
+
+
+class SuggestedValuationMethod(StrEnum):
+    SCENARIO_ANALYSIS = "scenario_analysis"
+    SPREAD_OPTION = "spread_option"
+    SWING_OPTION = "swing_option"
+    DEFERRAL_OPTION = "deferral_option"
+    MAKE_UP_VALUE = "make_up_value"
+    TERMINATION_DOWNSIDE_PROTECTION = "termination_downside_protection"
+    CREDIT_RISK_ADJUSTMENT = "credit_risk_adjustment"
+    OPERATIONAL_CONSTRAINT_ANALYSIS = "operational_constraint_analysis"
+    ANALYST_JUDGEMENT_REQUIRED = "analyst_judgement_required"
+    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+
+
 class RecommendationValue(StrEnum):
     PROCEED = "proceed"
     PROCEED_WITH_CONDITIONS = "proceed_with_conditions"
@@ -206,11 +233,33 @@ def _summarize_input_items(items: list[ValuationInputItem]) -> list[str]:
 class OptionalityRegisterItem(BaseModel):
     id: str
     option_name: str
+    option_type: OptionType = OptionType.OTHER
+    source_category: ProvisionCategory | None = None
+    source_provision_ids: list[str] = Field(default_factory=list)
+    source_clause_reference: str | None = None
+    extracted_right: str | None = None
     commercial_description: str
+    economic_value_logic: str | None = None
+    suggested_valuation_method: SuggestedValuationMethod = SuggestedValuationMethod.ANALYST_JUDGEMENT_REQUIRED
+    required_market_data: list[str] = Field(default_factory=list)
+    required_operational_data: list[str] = Field(default_factory=list)
+    required_portfolio_data: list[str] = Field(default_factory=list)
+    required_analyst_assumptions: list[str] = Field(default_factory=list)
+    key_value_drivers: list[str] = Field(default_factory=list)
+    key_risks_or_constraints: list[str] = Field(default_factory=list)
     valuation_impact: ValuationImpact
     evidence_status: EvidenceStatus
     confidence: Confidence
+    warnings: list[str] = Field(default_factory=list)
+    analyst_validation_needed: bool = True
+    # Compatibility field consumed by the current frontend shell.
     assumption_required: str | None = None
+
+    @model_validator(mode="after")
+    def populate_compatibility_fields(self) -> "OptionalityRegisterItem":
+        if self.assumption_required is None and self.required_analyst_assumptions:
+            self.assumption_required = self.required_analyst_assumptions[0]
+        return self
 
 
 class MarketContextAssessment(BaseModel):

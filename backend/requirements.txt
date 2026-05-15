@@ -8,3 +8,4 @@ pypdf
 openai
 pytest
 httpx
+boto3

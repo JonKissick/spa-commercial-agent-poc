@@ -1,8 +1,9 @@
 from app.schemas import CommercialEvaluationResponse, Confidence, CoverageStatus, EvidenceStatus
+from app.optionality import normalize_optionality_register
 from app.taxonomy import SPA_TAXONOMY, taxonomy_categories
 from app.valuation_inputs import normalize_valuation_input_pack
 
-NO_FULL_VALUATION_LIMITATION = "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 2 analysis."
+NO_FULL_VALUATION_LIMITATION = "No full valuation calculation, DCF model, or quantitative option valuation has been performed in this Stage 4 analysis."
 MARKET_PORTFOLIO_LIMITATION = "Market and portfolio conclusions require manual assumptions unless those assumptions are explicitly supplied in the uploaded document."
 
 
@@ -14,6 +15,8 @@ def validate_commercial_evaluation(response: CommercialEvaluationResponse) -> Co
     _validate_clause_coverage(response)
     _validate_provisions(response)
     normalize_valuation_input_pack(response)
+    normalize_optionality_register(response)
+    _validate_optionality(response)
 
     _ensure_limitation(response, NO_FULL_VALUATION_LIMITATION, ["no full valuation", "dcf", "option valuation"])
     _ensure_limitation(response, MARKET_PORTFOLIO_LIMITATION, ["market", "portfolio", "manual assumptions"])
@@ -70,6 +73,21 @@ def _validate_provisions(response: CommercialEvaluationResponse) -> None:
                 provision.warnings.append(warning)
         if provision.confidence == Confidence.LOW and not provision.warnings:
             provision.warnings.append("Low confidence extraction; analyst validation is required before commercial reliance.")
+
+
+
+def _validate_optionality(response: CommercialEvaluationResponse) -> None:
+    for index, item in enumerate(response.optionality_register, start=1):
+        if not item.id.strip():
+            raise CommercialEvaluationValidationError(f"Optionality item {index} is missing an id.")
+        if not item.option_name.strip():
+            raise CommercialEvaluationValidationError(f"Optionality item {item.id} is missing an option name.")
+        if not item.suggested_valuation_method:
+            raise CommercialEvaluationValidationError(f"Optionality item {item.id} is missing a suggested valuation method.")
+        if item.confidence == Confidence.LOW and not item.warnings:
+            item.warnings.append("Low confidence optionality extraction; analyst validation is required.")
+        if item.evidence_status == EvidenceStatus.INSUFFICIENT_EVIDENCE and not any("insufficient" in warning.lower() for warning in item.warnings):
+            item.warnings.append("Insufficient evidence supports this optionality item; do not value without contract validation.")
 
 
 def _sounds_like_missing_evidence(summary: str) -> bool:

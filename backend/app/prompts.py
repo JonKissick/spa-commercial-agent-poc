@@ -62,6 +62,19 @@ Clause coverage requirements:
   clause was identified.
 
 
+
+Optionality register requirements:
+- Identify embedded options and flexibilities only when supported by contract text.
+- Do not claim an option exists just because it is common in LNG SPAs or commodity SPAs.
+- For each option, explain the contractual right separately from inferred commercial/economic logic.
+- For each option, suggest a valuation method, but do not calculate value.
+- Suggested methods include scenario_analysis, spread_option, swing_option, deferral_option, make_up_value, termination_downside_protection, credit_risk_adjustment, operational_constraint_analysis, analyst_judgement_required, and insufficient_evidence.
+- List required market data, operational data, portfolio data, and analyst assumptions.
+- If evidence is weak, mark confidence low and include warnings.
+- If there is no sufficient evidence for optionality, return an empty register or an insufficient-evidence optionality item rather than inventing one.
+- Do not calculate option value, NPV, IRR, fair value, expected profit, margin, trade P&L, or final valuation.
+- Use source_provision_ids wherever practical and relate options back to provision categories and valuation input candidates.
+
 Valuation input pack requirements:
 - Do not perform final valuation.
 - Do not calculate NPV, IRR, option value, fair value, expected margin, trade P&L, or expected profit.
