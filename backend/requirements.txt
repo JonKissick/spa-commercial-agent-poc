@@ -9,3 +9,4 @@ openai
 pytest
 httpx
 boto3
+openpyxl

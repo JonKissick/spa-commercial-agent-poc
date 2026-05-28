@@ -1,6 +1,13 @@
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.agents.local_generator import draft_board_paper, draft_management_slide_pack
+from app.agents.schemas import (
+    BoardPaperDraftRequest,
+    BoardPaperDraftResponse,
+    ManagementSlidePackRequest,
+    ManagementSlidePackResponse,
+)
 from app.calculators.npv import calculate_npv
 from app.calculators.schemas import NpvCalculationRequest, NpvCalculationResponse
 from app.analysis_pipeline import AnalysisPipelineError, ContractTextValidationError, run_analysis_pipeline
@@ -15,6 +22,7 @@ from app.rag.schemas import IngestTextRequest, IngestionResult, KnowledgeDocumen
 from app.rag.seed_pack import SeedPackResult, seed_starter_knowledge_pack
 from app.schemas import CommercialEvaluationResponse, DocumentMetadata
 from app.validation import CommercialEvaluationValidationError
+from app.workbooks.npv_workbook import build_npv_workbook
 
 
 settings = get_settings()
@@ -111,6 +119,29 @@ def _to_document_metadata(stored_document: StoredDocument) -> DocumentMetadata:
 def calculator_npv(request: NpvCalculationRequest) -> NpvCalculationResponse:
     # Deterministic manual-assumption calculator. Does not call LLMs, RAG, or market data services.
     return calculate_npv(request)
+
+
+@app.post("/calculators/npv/workbook")
+def calculator_npv_workbook(request: NpvCalculationRequest) -> Response:
+    # Draft Excel output for local analyst review. Generated from deterministic calculator results only.
+    workbook_bytes = build_npv_workbook(calculate_npv(request))
+    return Response(
+        content=workbook_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="spa_npv_workbook.xlsx"'},
+    )
+
+
+@app.post("/agents/board-paper/draft", response_model=BoardPaperDraftResponse)
+def board_paper_draft(request: BoardPaperDraftRequest) -> BoardPaperDraftResponse:
+    # Local mock Bedrock/RAG scaffold. Does not call AWS Bedrock or external services.
+    return draft_board_paper(request)
+
+
+@app.post("/agents/management-slides/draft", response_model=ManagementSlidePackResponse)
+def management_slides_draft(request: ManagementSlidePackRequest) -> ManagementSlidePackResponse:
+    # Local mock Bedrock/RAG scaffold. Produces exactly five draft management slides.
+    return draft_management_slide_pack(request)
 
 
 @app.post("/rag/seed", response_model=SeedPackResult)
