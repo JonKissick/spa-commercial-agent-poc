@@ -1,0 +1,66 @@
+{
+  "contract_role": "buyer",
+  "delivery_basis": "fob",
+  "discount_rate": 0.1,
+  "contract_years": 5,
+  "currency": "USD",
+  "unit": "MMBtu",
+  "scenarios": [
+    {
+      "scenario_name": "base",
+      "annual_volume": 38400000,
+      "contract_price": 8.75,
+      "market_price": 12.0,
+      "freight_cost": 1.0,
+      "boil_off_cost": 0.15,
+      "port_canal_cost": 0.08,
+      "regas_terminal_cost": 0.3,
+      "downstream_cost": 0.15,
+      "other_costs": 0.0,
+      "annual_fixed_costs": 2500000,
+      "notes": "Synthetic base case only."
+    },
+    {
+      "scenario_name": "upside",
+      "annual_volume": 38400000,
+      "contract_price": 8.75,
+      "market_price": 14.0,
+      "freight_cost": 1.0,
+      "boil_off_cost": 0.15,
+      "port_canal_cost": 0.08,
+      "regas_terminal_cost": 0.3,
+      "downstream_cost": 0.15,
+      "other_costs": 0.0,
+      "annual_fixed_costs": 2500000,
+      "notes": "Synthetic upside case only."
+    },
+    {
+      "scenario_name": "downside",
+      "annual_volume": 38400000,
+      "contract_price": 8.75,
+      "market_price": 9.5,
+      "freight_cost": 1.0,
+      "boil_off_cost": 0.15,
+      "port_canal_cost": 0.08,
+      "regas_terminal_cost": 0.3,
+      "downstream_cost": 0.15,
+      "other_costs": 0.0,
+      "annual_fixed_costs": 2500000,
+      "notes": "Synthetic downside case only."
+    },
+    {
+      "scenario_name": "stress",
+      "annual_volume": 38400000,
+      "contract_price": 8.75,
+      "market_price": 7.5,
+      "freight_cost": 1.0,
+      "boil_off_cost": 0.15,
+      "port_canal_cost": 0.08,
+      "regas_terminal_cost": 0.3,
+      "downstream_cost": 0.15,
+      "other_costs": 0.0,
+      "annual_fixed_costs": 2500000,
+      "notes": "Synthetic stress case only."
+    }
+  ]
+}

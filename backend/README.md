@@ -47,6 +47,10 @@ The API will be available at `http://localhost:8000` unless that port is already
 - `GET /health`: returns `{ "status": "ok" }`.
 - `POST /analyze`: accepts a text-based PDF upload as multipart form data and returns a structured commercial evaluation.
 - `GET /system/status`: returns non-secret local POC status for the frontend workbench.
+- `POST /calculators/npv`: runs deterministic manual scenario NPV, sensitivity, and break-even calculations.
+- `POST /calculators/npv/workbook`: returns a draft `.xlsx` workbook generated from the manual NPV request.
+- `POST /agents/board-paper/draft`: returns a mock Bedrock/RAG board-paper draft grounded in structured analysis outputs.
+- `POST /agents/management-slides/draft`: returns a mock Bedrock/RAG five-slide management-pack draft.
 
 ## Test `/analyze`
 
@@ -215,6 +219,16 @@ Example retrieval checks after seeding:
 ```
 
 Stage 8A still uses local keyword retrieval only. It does not add embeddings, Bedrock Knowledge Bases, external LLM calls, AWS deployment, auth, a database, or production RAG access controls.
+
+## Demo Workbook and Agent Scaffolds
+
+The local POC includes deterministic artifacts for review:
+
+- `app/workbooks/npv_workbook.py` builds an Excel workbook from a `NpvCalculationResponse`.
+- `/calculators/npv/workbook` calculates NPV from manual assumptions and returns the workbook as `.xlsx`.
+- `app/agents/local_generator.py` builds draft board-paper content and an exactly five-slide management pack from `CommercialEvaluationResponse`, optional NPV results, and optional RAG metadata.
+
+These scaffolds are intentionally local and draft-marked. They do not call AWS Bedrock, create embeddings, ingest unapproved documents, use live market data, or provide legal/financial advice. They are designed to show how future Bedrock/RAG agents could consume structured valuation outputs after production controls are approved.
 
 ## Stage 2 Taxonomy
 
